@@ -1,0 +1,16 @@
+.git
+node_modules
+dist
+.astro
+.env
+.env.*
+!.env.example
+uploads
+data.db
+data.db-*
+data/
+*.md
+.agents
+.claude
+.cursor
+.vscode

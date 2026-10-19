@@ -1,0 +1,308 @@
+{
+	"$schema": "https://emdashcms.com/seed.schema.json",
+	"version": "1",
+	"meta": {
+		"name": "Reinforce.moe demo",
+		"description": "Reinforce.moe theme on EmDash",
+		"author": "ReinforceZwei"
+	},
+	"settings": {
+		"title": "Reinforce.moe",
+		"tagline": "碎碎唸"
+	},
+	"collections": [
+		{
+			"slug": "posts",
+			"label": "Posts",
+			"labelSingular": "Post",
+			"urlPattern": "/posts/{slug}",
+			"supports": [
+				"drafts",
+				"revisions",
+				"preview",
+				"scheduling",
+				"search",
+				"seo"
+			],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "featured_image",
+					"label": "Featured Image",
+					"type": "image"
+				},
+				{
+					"slug": "content",
+					"label": "Content",
+					"type": "portableText",
+					"searchable": true
+				},
+				{
+					"slug": "excerpt",
+					"label": "Excerpt",
+					"type": "text"
+				}
+			]
+		},
+		{
+			"slug": "pages",
+			"label": "Pages",
+			"labelSingular": "Page",
+			"urlPattern": "/{slug}",
+			"supports": [
+				"drafts",
+				"revisions",
+				"preview",
+				"search",
+				"seo"
+			],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "content",
+					"label": "Content",
+					"type": "portableText",
+					"searchable": true
+				}
+			]
+		}
+	],
+	"taxonomies": [
+		{
+			"name": "category",
+			"label": "Categories",
+			"labelSingular": "Category",
+			"hierarchical": true,
+			"collections": [
+				"posts"
+			],
+			"terms": [
+				{
+					"slug": "reinforce的碎碎唸",
+					"label": "Reinforce的碎碎唸",
+					"description": ""
+				},
+				{
+					"slug": "和程式有關",
+					"label": "和程式有關",
+					"description": ""
+				},
+				{
+					"slug": "和電腦有關",
+					"label": "和電腦有關",
+					"description": ""
+				},
+				{
+					"slug": "和音樂有關",
+					"label": "和音樂有關",
+					"description": ""
+				},
+				{
+					"slug": "uncategorized",
+					"label": "未分類",
+					"description": ""
+				}
+			]
+		},
+		{
+			"name": "tag",
+			"label": "Tags",
+			"labelSingular": "Tag",
+			"hierarchical": false,
+			"collections": [
+				"posts"
+			],
+			"terms": [
+				{
+					"slug": "accent",
+					"label": "accent"
+				},
+				{
+					"slug": "android",
+					"label": "android"
+				},
+				{
+					"slug": "apple",
+					"label": "apple"
+				},
+				{
+					"slug": "apple-id",
+					"label": "apple id"
+				},
+				{
+					"slug": "autohotkey",
+					"label": "autohotkey"
+				},
+				{
+					"slug": "coder",
+					"label": "coder"
+				},
+				{
+					"slug": "docker",
+					"label": "docker"
+				},
+				{
+					"slug": "drums",
+					"label": "drums"
+				},
+				{
+					"slug": "ff43",
+					"label": "FF43"
+				},
+				{
+					"slug": "ff44",
+					"label": "ff44"
+				},
+				{
+					"slug": "ff45",
+					"label": "FF45"
+				},
+				{
+					"slug": "github",
+					"label": "github"
+				},
+				{
+					"slug": "gp8",
+					"label": "gp8"
+				},
+				{
+					"slug": "guitar-pro-8",
+					"label": "guitar pro 8"
+				},
+				{
+					"slug": "ipad",
+					"label": "ipad"
+				},
+				{
+					"slug": "nas",
+					"label": "NAS"
+				},
+				{
+					"slug": "notation",
+					"label": "notation"
+				},
+				{
+					"slug": "nothing-phone",
+					"label": "nothing phone"
+				},
+				{
+					"slug": "pencil",
+					"label": "pencil"
+				},
+				{
+					"slug": "wordpress",
+					"label": "wordpress"
+				},
+				{
+					"slug": "伺服器",
+					"label": "伺服器"
+				},
+				{
+					"slug": "個人主機",
+					"label": "個人主機"
+				},
+				{
+					"slug": "兩週年",
+					"label": "兩週年"
+				},
+				{
+					"slug": "台灣",
+					"label": "台灣"
+				},
+				{
+					"slug": "手機",
+					"label": "手機"
+				},
+				{
+					"slug": "硬件",
+					"label": "硬件"
+				},
+				{
+					"slug": "程式",
+					"label": "程式"
+				},
+				{
+					"slug": "經典棒球帽收藏盒",
+					"label": "經典棒球帽收藏盒"
+				},
+				{
+					"slug": "蔚藍檔案",
+					"label": "蔚藍檔案"
+				},
+				{
+					"slug": "軟件",
+					"label": "軟件"
+				},
+				{
+					"slug": "遊戲",
+					"label": "遊戲"
+				},
+				{
+					"slug": "開箱",
+					"label": "開箱"
+				}
+			]
+		}
+	],
+	"menus": [
+		{
+			"name": "primary",
+			"label": "Primary Navigation",
+			"items": [
+				{
+					"type": "custom",
+					"label": "Home",
+					"url": "/"
+				},
+				{
+					"type": "custom",
+					"label": "About",
+					"url": "/about"
+				}
+			]
+		}
+	],
+	"widgetAreas": [
+		{
+			"name": "sidebar",
+			"label": "Sidebar",
+			"description": "Sidebar widget area",
+			"widgets": [
+				{
+					"type": "component",
+					"componentId": "core:search",
+					"title": "Search"
+				},
+				{
+					"type": "component",
+					"componentId": "core:categories",
+					"title": "Categories"
+				},
+				{
+					"type": "component",
+					"componentId": "core:recent-posts",
+					"title": "Recent Posts",
+					"props": {
+						"count": 5
+					}
+				}
+			]
+		}
+	],
+	"content": {
+		"pages": [],
+		"posts": []
+	}
+}

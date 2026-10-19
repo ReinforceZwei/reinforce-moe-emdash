@@ -1,0 +1,35 @@
+---
+import { getEmDashEntry, getEntryTerms, getSeoMeta, decodeSlug } from "emdash";
+import Base from "../../layouts/Base.astro";
+import Post from "../../components/Post.astro";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
+if (!post) return Astro.rewrite("/404");
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const termsRaw = await getEntryTerms("posts", post.data.id);
+const terms = (termsRaw ?? []).map((t: any) => ({
+	slug: t.slug,
+	label: t.label,
+	taxonomy: t.taxonomy?.name ?? t.taxonomy,
+}));
+
+const seo = getSeoMeta(post, {
+	siteTitle: "Reinforce.moe",
+	siteUrl: Astro.url.origin,
+	path: Astro.url.pathname,
+});
+---
+
+<Base
+	title={post.data.title}
+	pageTitle={post.data.title}
+	description={post.data.excerpt ?? undefined}
+	canonical={seo.canonical}
+	content={{ collection: "posts", id: post.data.id, slug }}
+>
+	<Post post={post} terms={terms} />
+</Base>

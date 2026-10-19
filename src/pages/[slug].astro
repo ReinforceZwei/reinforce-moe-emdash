@@ -1,0 +1,27 @@
+---
+import { getEmDashEntry, getSeoMeta, decodeSlug } from "emdash";
+import Base from "../layouts/Base.astro";
+import Page from "../components/Page.astro";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
+if (!page) return Astro.rewrite("/404");
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const seo = getSeoMeta(page, {
+	siteTitle: "Reinforce.moe",
+	siteUrl: Astro.url.origin,
+	path: Astro.url.pathname.replace(/\/$/, ""),
+});
+---
+
+<Base
+	title={page.data.title}
+	pageTitle={seo.ogTitle}
+	canonical={seo.canonical}
+	content={{ collection: "pages", id: page.data.id, slug }}
+>
+	<Page page={page} />
+</Base>

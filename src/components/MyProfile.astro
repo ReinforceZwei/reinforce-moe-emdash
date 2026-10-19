@@ -1,0 +1,33 @@
+---
+import { Image } from "astro:assets";
+import iAmReinforce from "../assets/I-am-Reinforce.jpg";
+import Github from "./brand/Github.astro";
+import X from "./brand/X.astro";
+---
+<div>
+  <figure>
+    <Image src={iAmReinforce} alt="site logo card" />
+  </figure>
+  <div>
+    <p>一個喜歡日本動畫和資訊科技的程序員，自稱Reinforce II，平日沒事就玩遊戲，搞伺服器，品嘗美食。有空的話還喜歡寫文章來顯得他很有料(～￣▽￣)～</p>
+    <ul>
+      <li><a href="/about">關於 Reinforce II</a></li>
+    </ul>
+  </div>
+  <div class="social-links">
+    <Github href="https://github.com/ReinforceZwei" />
+    <X href="https://x.com/ReinforceZw" />
+  </div>
+</div>
+
+<style>
+figure {
+  margin: 0;
+}
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+</style>

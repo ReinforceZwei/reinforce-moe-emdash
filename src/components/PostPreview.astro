@@ -1,0 +1,115 @@
+---
+import { Image } from "emdash/ui";
+
+interface Props {
+	post: any;
+	category?: { slug: string; label: string } | null;
+	tags?: { slug: string; label: string }[];
+}
+
+const { post, category = null, tags = [] }: Props = Astro.props;
+
+const date = post.data.publishedAt ?? post.data.createdAt;
+const published = date
+	? new Date(date).toLocaleDateString("zh-TW", {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+			weekday: "short",
+			timeZone: "Asia/Hong_Kong",
+		})
+	: "";
+const excerpt = post.data.excerpt
+	? String(post.data.excerpt).slice(0, 100) + "..."
+	: "";
+const fi = post.data.featured_image;
+const firstInline = (post.data.content ?? []).find((b: any) => b?._type === "image");
+const featuredUrl =
+	fi?.src ||
+	fi?.url ||
+	firstInline?.asset?.url ||
+	null;
+const featuredAlt = fi?.alt ?? firstInline?.alt ?? post.data.title;
+---
+
+<div>
+  <h1>
+    <a href={`/posts/${post.id}`}>{post.data.title}</a>
+  </h1>
+  {featuredUrl && (
+    <figure>
+      <a href={`/posts/${post.id}`}>
+        <img src={featuredUrl} alt={featuredAlt} loading="lazy" />
+      </a>
+    </figure>
+  )}
+  {excerpt && <p>{excerpt}</p>}
+  <div>
+    <a href={`/posts/${post.id}`} class="read-more">閲讀全文</a>
+  </div>
+  <div class="info-section">
+    <div>{published}</div>
+    {category && (
+      <div class="category">
+        分類：<a href={`/category/${category.slug}`}>{category.label}</a>
+      </div>
+    )}
+    {tags.length > 0 && (
+      <div class="tags">
+        {tags.map((tag, index) => (
+          <>
+            <a href={`/tag/${tag.slug}`} class="tag">{tag.label}</a>
+            {index < tags.length - 1 && <span class="tag-separator">, </span>}
+          </>
+        ))}
+      </div>
+    )}
+  </div>
+  <hr />
+</div>
+
+<style>
+.info-section {
+  margin-top: 2rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.category {
+  margin-top: 0.5rem;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  align-items: baseline;
+}
+.tag {
+  font-size: 0.8em;
+  color: inherit;
+}
+.tag-separator {
+  margin-right: 0.3rem;
+}
+hr {
+  border: none !important;
+  text-align: center;
+}
+hr::before {
+  color: currentColor;
+  content: "···";
+  font-family: serif;
+  font-size: 1.5em;
+  letter-spacing: 2em;
+  padding-left: 2em;
+}
+figure {
+  margin: 0;
+  margin-top: 4rem;
+  margin-bottom: 3rem;
+}
+img {
+  width: 100%;
+}
+</style>

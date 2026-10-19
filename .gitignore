@@ -1,0 +1,19 @@
+node_modules
+dist
+.astro
+.emdash/migrations.json
+uploads
+data.db
+data.db-*
+
+# SQLite database directory (contains users, passkeys, content)
+data/
+# Staged import media + manifests
+import/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+.env.r2

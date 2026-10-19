@@ -1,0 +1,9 @@
+---
+import xIcon from '../../assets/brand/x.svg';
+import Base from './_base.astro';
+
+interface Props {
+  href: string;
+}
+---
+<Base href={Astro.props.href} image={xIcon} alt="X (formerly Twitter)" />

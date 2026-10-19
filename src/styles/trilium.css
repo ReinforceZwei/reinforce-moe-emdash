@@ -1,0 +1,171 @@
+figcaption {
+  color: #555;
+  font-size: 13px;
+  text-align: center;
+}
+
+.image {
+  clear: both;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.image.image_resized {
+  max-width: 100%;
+  display: block;
+}
+
+.image-style-align-right {
+  float: right;
+  margin-left: 1.4em;
+}
+
+.image-style-align-left {
+  float: left;
+  margin-right: 1.4em;
+}
+
+.image-style-block-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.image-style-block-align-right {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.image-style-block-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Admonition styles */
+.admonition {
+  margin: 1.5rem 0;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.admonition p {
+  margin: 0;
+}
+
+.admonition::before {
+  display: block;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.5px;
+}
+
+/* Note variant */
+.admonition.note {
+  background-color: #e7f2fa;
+  border-left-color: #0099ff;
+}
+
+.admonition.note::before {
+  content: "📝 Note";
+  color: #0099ff;
+}
+
+/* Tip variant */
+.admonition.tip {
+  background-color: #e6f6e6;
+  border-left-color: #00b300;
+}
+
+.admonition.tip::before {
+  content: "💡 Tip";
+  color: #00b300;
+}
+
+/* Important variant */
+.admonition.important {
+  background-color: #f2e6ff;
+  border-left-color: #9933ff;
+}
+
+.admonition.important::before {
+  content: "❗ Important";
+  color: #9933ff;
+}
+
+/* Caution variant */
+.admonition.caution {
+  background-color: #fff3e6;
+  border-left-color: #ff9900;
+}
+
+.admonition.caution::before {
+  content: "⚠️ Caution";
+  color: #ff9900;
+}
+
+/* Warning variant */
+.admonition.warning {
+  background-color: #ffe6e6;
+  border-left-color: #ff3333;
+}
+
+.admonition.warning::before {
+  content: "🚨 Warning";
+  color: #ff3333;
+}
+
+/* Blockquote styling */
+blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 2.5rem;
+  background-color: #ffe3e3;
+  border-radius: 4px;
+  position: relative;
+}
+
+blockquote::before {
+  content: '"';
+  font-family: Georgia, serif;
+  font-size: 4em;
+  position: absolute;
+  left: 0.1em;
+  top: 0.1em;
+  line-height: 1;
+  color: #f4b1be;
+}
+
+blockquote p {
+  margin: 0.5em 0;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+blockquote p:first-of-type {
+  margin-top: 0;
+}
+
+blockquote p:last-of-type {
+  margin-bottom: 0;
+}
+
+.include-note {
+	max-height: 300px;
+	overflow: auto;
+	padding: 0.5rem;
+	border-radius: 5px;
+	background-color: #ffeaea;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin-block-end: 1.5rem;
+}
+.include-note[data-box-size="small"] {
+  max-height: 10rem;
+}
+.include-note[data-box-size="medium"] {
+  max-height: 19rem;
+}
+.include-note[data-box-size="full"] {
+  /* max-height: 30rem; */
+}

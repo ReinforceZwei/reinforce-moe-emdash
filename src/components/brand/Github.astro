@@ -1,0 +1,9 @@
+---
+import githubIcon from '../../assets/brand/github.svg';
+import Base from './_base.astro';
+
+interface Props {
+  href: string;
+}
+---
+<Base href={Astro.props.href} image={githubIcon} alt="GitHub" />

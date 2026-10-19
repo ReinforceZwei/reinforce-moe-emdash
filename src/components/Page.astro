@@ -1,0 +1,32 @@
+---
+import { PortableText } from "emdash/ui";
+import Container from "./Container.astro";
+
+interface Props {
+	page: any;
+}
+const { page }: Props = Astro.props;
+---
+
+<Container>
+  <h1 {...page.edit.title}>{page.data.title}</h1>
+  <hr />
+  <div class="spacer"></div>
+  <div class="post-content">
+    <PortableText value={page.data.content} />
+  </div>
+</Container>
+
+<style>
+h1 {
+  margin-bottom: 1rem;
+}
+.post-content {
+  max-width: 600px;
+  margin-inline: auto;
+}
+.spacer {
+  height: 32px;
+  margin-block-start: 32px;
+}
+</style>

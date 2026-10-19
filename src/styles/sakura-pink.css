@@ -1,0 +1,248 @@
+/* Sakura.css v1.5.0
+ * ================
+ * Minimal css theme.
+ * Project: https://github.com/oxalorg/sakura/
+ */
+/* Body */
+html {
+  font-size: 100%; /* 16px */
+  font-family: "Noto Sans", "Noto Sans TC", "Noto Sans JP", "Helvetica Neue", Helvetica, Arial, sans-serif, "Apple Symbols";
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.618;
+  margin: auto;
+  color: #CA2315;
+  background-color: #FFF6F6;
+}
+
+@media (max-width: 684px) {
+  body {
+    font-size: 0.85rem;
+  }
+}
+@media (max-width: 382px) {
+  body {
+    font-size: 0.75rem;
+  }
+}
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.1;
+  font-family: "Noto Sans", "Noto Sans TC", "Noto Sans JP", "Helvetica Neue", Helvetica, Arial, sans-serif, "Apple Symbols";
+  font-weight: 400;
+  margin-top: 1.67rem;
+  margin-bottom: 0.83rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -ms-word-break: break-all;
+  word-break: break-word;
+}
+
+h1 {
+  font-size: 2.35em;
+}
+
+h2 {
+  font-size: 2em;
+}
+
+h3 {
+  font-size: 1.75em;
+}
+
+h4 {
+  font-size: 1.5em;
+}
+
+h5 {
+  font-size: 1.25em;
+}
+
+h6 {
+  font-size: 1em;
+}
+
+p {
+  margin-top: 0px;
+  margin-bottom: 1.4rem;
+}
+
+small, sub, sup {
+  font-size: 75%;
+}
+
+hr {
+  border-color: #1c151880;
+}
+
+a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25ch;
+  color: #CA2315;
+}
+a:hover {
+  text-decoration-style: dashed;
+}
+
+ul {
+  padding-left: 1.4em;
+  margin-top: 0px;
+  margin-bottom: 1.4rem;
+}
+
+li {
+  margin-bottom: 0.4em;
+}
+
+/* blockquote {
+  margin-left: 0px;
+  margin-right: 0px;
+  padding-left: 1em;
+  padding-top: 0.8em;
+  padding-bottom: 0.8em;
+  padding-right: 0.8em;
+  border-left: 5px solid #980255;
+  margin-bottom: 1.4rem;
+  background-color: #f8d2e9;
+}
+
+blockquote p {
+  margin-bottom: 0;
+} */
+
+img, video {
+  height: auto;
+  max-width: 100%;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+/* Pre and Code */
+code, kbd, pre, samp, tt {
+  font-family: 'Noto Sans Mono Variable', monospace;
+}
+
+pre {
+  background-color: #f8d2e9;
+  display: block;
+  padding: 1em;
+  overflow-x: auto;
+  margin-top: 0px;
+  margin-bottom: 1.4rem;
+  font-size: 0.9em;
+}
+
+:not(pre) > code, samp {
+  font-size: 0.9em;
+  background-color: #f8d2e9;
+  white-space: pre-wrap;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  color: #e83e8c;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+a > code {
+  color: inherit;
+}
+
+kbd {
+  font-size: 0.9em;
+	border: 1px solid #dad1d9;
+	border-bottom-color: #c497b4;
+	border-radius: 3px;
+	box-shadow: inset 0 -1px 0 #b495b7;
+	display: inline-block;
+	line-height: 1;
+	padding: 0.1em 0.3em;
+	vertical-align: middle;
+  color: #e83e8c;
+  background-color: #f8d2e9;
+}
+
+pre > code {
+  padding: 0;
+  background-color: transparent;
+  white-space: pre;
+  font-size: 1em;
+}
+
+/* Tables */
+table {
+  text-align: justify;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+td, th {
+  padding: 0.5em;
+  border-bottom: 1px solid #f8d2e9;
+}
+
+/* Buttons, forms and input */
+input, textarea {
+  border: 1px solid #49002d;
+}
+input:focus, textarea:focus {
+  border: 1px solid #980255;
+}
+
+textarea {
+  width: 100%;
+}
+
+.button, button, input[type=submit], input[type=reset], input[type=button], input[type=file]::file-selector-button {
+  display: inline-block;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  background-color: #980255;
+  color: #ffe4f5;
+  border-radius: 1px;
+  border: 1px solid #980255;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.button[disabled], button[disabled], input[type=submit][disabled], input[type=reset][disabled], input[type=button][disabled], input[type=file][disabled]::file-selector-button {
+  cursor: default;
+  opacity: 0.5;
+}
+.button:hover, button:hover, input[type=submit]:hover, input[type=reset]:hover, input[type=button]:hover, input[type=file]::file-selector-button:hover {
+  background-color: #753851;
+  color: #ffe4f5;
+  outline: 0;
+}
+.button:focus-visible, button:focus-visible, input[type=submit]:focus-visible, input[type=reset]:focus-visible, input[type=button]:focus-visible, input[type=file]::file-selector-button:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+}
+
+textarea, select, input {
+  color: #49002d;
+  padding: 6px 10px; /* The 6px vertically centers text on FF, ignored by Webkit */
+  margin-bottom: 10px;
+  background-color: #f8d2e9;
+  border: 1px solid #f8d2e9;
+  border-radius: 4px;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+textarea:focus, select:focus, input:focus {
+  border: 1px solid #980255;
+  outline: 0;
+}
+
+input[type=checkbox]:focus {
+  outline: 1px dotted #980255;
+}
+
+label, legend, fieldset {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}

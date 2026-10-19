@@ -1,0 +1,36 @@
+---
+import { getTaxonomyTerms } from "emdash";
+
+const categories = (await getTaxonomyTerms("category", { includeCounts: true })) as {
+	slug: string;
+	label: string;
+	count?: number;
+}[];
+---
+
+<strong>分類</strong>
+<ul class="categories">
+  {categories.map((category) => (
+    <li class="category">
+      <div class="category-name">
+        <a href={`/category/${category.slug}`}>{category.label}</a>
+        <span class="post-count">({category.count ?? 0})</span>
+      </div>
+    </li>
+  ))}
+</ul>
+
+<style>
+.category {
+  margin: 0;
+}
+.category-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.post-count {
+  color: #666;
+  font-size: 0.9em;
+}
+</style>

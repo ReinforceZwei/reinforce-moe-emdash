@@ -1,0 +1,51 @@
+---
+import { getTaxonomyTerms } from "emdash";
+
+const terms = (await getTaxonomyTerms("tag", { includeCounts: true })) as {
+	slug: string;
+	label: string;
+	count?: number;
+}[];
+
+const counts = terms.map((t) => t.count ?? 1);
+const minCount = counts.length ? Math.min(...counts) : 1;
+const maxCount = counts.length ? Math.max(...counts) : 1;
+
+function getFontSize(count: number) {
+  const minFont = 0.7;
+  const maxFont = 1.6;
+  if (maxCount === minCount) return `${minFont}em`;
+  const scale = (count - minCount) / (maxCount - minCount);
+  return `${(minFont + (maxFont - minFont) * scale).toFixed(2)}rem`;
+}
+---
+
+<strong>標籤</strong>
+<ul class="tags">
+  {terms.map((tag) => (
+    <li style={`font-size: ${getFontSize(tag.count ?? 1)}`}>
+      <a href={`/tag/${tag.slug}`}>{tag.label}</a>
+      <span class="post-count">({tag.count ?? 0})</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.3rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  align-items: baseline;
+}
+.tags li {
+  margin-bottom: 0;
+}
+.post-count {
+  margin-left: 0.2em;
+  color: inherit;
+  font-size: inherit;
+}
+</style>

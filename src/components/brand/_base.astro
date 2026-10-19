@@ -1,0 +1,49 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  href: string;
+  alt: string;
+  /**
+   * Color only take effects when using SVG path
+   */
+  color?: string;
+  size?: number;
+  // Make path and image mutually exclusive
+  path?: string;
+  image?: ImageMetadata;
+}
+
+const { href, alt, color = "#000000", size = 24, path, image } = Astro.props;
+
+// Validate that either path or image is provided, but not both
+if (!path && !image || (path && image)) {
+  throw new Error('Either path or image must be provided, but not both');
+}
+---
+<a href={href} target="_blank" rel="noopener noreferrer" aria-label={alt}>
+  {path ? (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      aria-hidden="true"
+    >
+      <path d={path} fill={color} />
+    </svg>
+  ) : (
+    <Image 
+      src={image!} 
+      alt={alt}
+      width={size}
+      height={size}
+    />
+  )}
+</a>
+
+<style>
+  svg, img {
+    vertical-align: middle;
+  }
+</style>

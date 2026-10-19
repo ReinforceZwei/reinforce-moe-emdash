@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+    container_name: emdash-demo-app
+    env_file: .env
+    ports:
+      - "4321:4321"
+    volumes:
+      - ./data:/app/data
+      - ./import:/import:ro
+    restart: unless-stopped

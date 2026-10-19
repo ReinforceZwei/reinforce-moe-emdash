@@ -1,0 +1,71 @@
+---
+import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
+import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
+import { createPublicPageContext } from "emdash/page";
+import "@fontsource-variable/noto-sans-tc";
+import "@fontsource-variable/noto-sans-mono";
+import "../styles/sakura-pink.css";
+import "../styles/trilium.css";
+import original from "../assets/original.png";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+interface Props {
+	title: string;
+	pageTitle?: string | null;
+	description?: string | null;
+	image?: string | null;
+	canonical?: string | null;
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { title, pageTitle, description, image, canonical, content } =
+	Astro.props;
+
+const [settingsResult, menuResult] = await Promise.all([
+	getSiteSettingsWithCacheHint(),
+	getMenuWithCacheHint("primary"),
+]);
+if (Astro.cache?.enabled) {
+	Astro.cache.set(settingsResult.cacheHint);
+	Astro.cache.set(menuResult.cacheHint);
+}
+
+const settings = settingsResult.data as { title?: string; tagline?: string };
+const siteTitle = settings?.title ?? "Reinforce.moe";
+const siteTagline = settings?.tagline ?? "碎碎唸";
+
+const fullTitle = title ? `${title} - Reinforce.moe` : siteTitle;
+
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: "website",
+	title: fullTitle,
+	pageTitle: pageTitle ?? title,
+	description: description ?? siteTagline,
+	canonical,
+	image,
+	content,
+	siteName: siteTitle,
+});
+---
+
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/png" href={original.src} />
+		<meta name="generator" content={Astro.generator} />
+		<title>{fullTitle}</title>
+		<EmDashHead page={pageCtx} />
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+		<Header />
+		<slot />
+		<Footer />
+		<EmDashBodyEnd page={pageCtx} />
+	</body>
+</html>
