@@ -52,6 +52,24 @@ Required environment:
 The first request runs EmDash migrations and applies the seed's content model. Open `/_emdash/admin` to complete setup
 (passkey registration) and create the first admin.
 
+## Seed
+
+`seed/seed.json` is generated from the running site with `emdash export-seed --with-content all`
+(post/page collections, 25 posts, 2 pages, 5 categories, 32 tags, menus, widgets, site settings).
+
+`export-seed` leaves Portable Text image blocks pointing at media IDs from the source database, which
+do not exist on any other install. Those references were rewritten to the portable form the seed engine
+understands:
+
+```json
+"asset": { "$media": { "url": "https://media.reinforce.moe/<storageKey>", "alt": "...", "filename": "..." } }
+```
+
+Applying the seed therefore downloads each image (121 files), stores it in the configured storage and
+rewrites the block to a real `asset._ref`. Progress on a fresh SQLite database: 27 entries, 37 terms,
+120 media created (3 deduplicated by content hash). Pass `--skip-media` to keep external URLs instead
+of copying the files.
+
 ## Notes
 
 - Content was imported from the WordPress REST API and converted to Portable Text; scripts live outside this repo.
