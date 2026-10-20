@@ -76,3 +76,28 @@ of copying the files.
 - Post cards fall back to the first inline image because list queries do not expand the `featured_image` media object.
 - Admin auth is passkey-only, and WebAuthn requires a secure context — reach the admin over `localhost` (SSH tunnel), not a plain-HTTP LAN or tailnet address.
 - Back up `data/` (the database plus `-wal`/`-shm`) and the bucket separately; media bytes do not live in the database.
+
+## Releasing
+
+Container images are published to GHCR by `.github/workflows/image.yml`:
+
+| Trigger            | Tags published                                          |
+| ------------------ | ------------------------------------------------------- |
+| push to `main`     | `edge`, `sha-<short>` — staging/preview only            |
+| tag `vX.Y.Z`       | `X.Y.Z`, `X.Y`, `X`, `latest` + a GitHub Release        |
+
+```bash
+./release.sh patch          # or minor / major
+./release.sh minor -p       # -p also runs git push && git push --tags
+./release.ps1 minor -p      # Windows
+```
+
+`release.sh` calls `npm version`, which bumps `package.json` and `package-lock.json`, commits
+`chore(release): vX.Y.Z` and creates the `vX.Y.Z` tag that CI builds from. Bump rules: **major** when
+the release needs a content or data action (DB/storage adapter change, route or seed format change),
+**minor** for template/feature work, **patch** for dependency bumps and fixes.
+
+Production pins the full `X.Y.Z` tag (or its digest); `latest` is only ever published from a tag.
+Migrations run forward on the first request after deploy, so back up `data/` before swapping the
+container — after an image has migrated, rolling back means restoring the database.
+
