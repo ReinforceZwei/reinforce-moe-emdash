@@ -14,6 +14,8 @@ on:
   push:
     branches: [main]
     tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write # create the GitHub Release
@@ -41,6 +43,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -65,7 +68,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
