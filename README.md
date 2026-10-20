@@ -75,6 +75,7 @@ of copying the files.
 - Content was imported from the WordPress REST API and converted to Portable Text; scripts live outside this repo.
 - Post cards fall back to the first inline image because list queries do not expand the `featured_image` media object.
 - Admin auth is passkey-only, and WebAuthn requires a secure context — reach the admin over `localhost` (SSH tunnel), not a plain-HTTP LAN or tailnet address.
+- Images are optimised through Astro's `/_image` endpoint (`srcset` + WebP), which needs two things: `s3({ publicUrl })` so the media host is authorised at build time, and `width`/`height` on each Portable Text image block — emdash's `<Image>` silently degrades to a plain `<img>` without them. Blocks written by the admin editor carry the dimensions; imported content does not, so run `npm run backfill:image-dimensions -- /app/data/emdash.db` once after importing.
 - Back up `data/` (the database plus `-wal`/`-shm`) and the bucket separately; media bytes do not live in the database.
 
 ## Releasing
