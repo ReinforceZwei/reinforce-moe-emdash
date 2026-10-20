@@ -19,7 +19,10 @@ export default defineConfig({
 		react(),
 		emdash({
 			database: sqlite({ url: "file:/app/data/emdash.db" }),
-			storage: s3(),
+			// Hardcoded (not env): EmDash bakes image.remotePatterns at build time and only reads
+			// `publicUrl` from this config, never from S3_PUBLIC_URL. Without it Astro refuses the
+			// media host and every image falls back to a plain, unoptimised <img>.
+			storage: s3({ publicUrl: "https://media.reinforce.moe" }),
 		}),
 	],
 	devToolbar: { enabled: false },
