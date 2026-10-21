@@ -82,6 +82,19 @@ rewrites the block to a real `asset._ref`. Progress on a fresh SQLite database: 
 120 media created (3 deduplicated by content hash). Pass `--skip-media` to keep external URLs instead
 of copying the files.
 
+**Publish dates do not survive a seed.** The seed format has no timestamp fields: `apply.ts` creates
+every non-draft entry with `publishedAt: new Date()`, and `export-seed` does not emit the timestamps
+either. A freshly seeded site therefore shows all 25 posts as published today and sorts the archive by
+seed order. `seed/publish-dates.json` holds the source site's public dates per slug (UTC, from the
+WordPress `datePublished`), and the backfill applies them:
+
+```bash
+npm run backfill:publish-dates -- /app/data/emdash.db --dry-run   # preview
+npm run backfill:publish-dates -- /app/data/emdash.db            # write
+```
+
+It only rewrites entries whose timestamp differs, so it is safe to re-run after seeding again.
+
 ## Notes
 
 - Content was imported from the WordPress REST API and converted to Portable Text; scripts live outside this repo.
