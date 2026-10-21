@@ -1,6 +1,12 @@
+---
+import { WidgetArea } from "emdash/ui";
+import { getWidgetArea } from "emdash";
+const area = await getWidgetArea("home-spotlight");
+---
 <div class="spotlight">
   <img src="/hertaa1.gif" alt="くるくる" width="250" height="250" />
   <hr />
+  <WidgetArea name="home-spotlight" />
 </div>
 
 <style>
