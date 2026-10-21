@@ -41,6 +41,18 @@ cp .env.example .env            # fill in the values below
 docker compose up -d --build
 ```
 
+Running it locally without Docker (needs Node 22+ and `npm ci`):
+
+```bash
+cp .env.example .env
+# EMDASH_DB_PATH=./data/emdash.db   (uncomment; the default /app/data/emdash.db is the container mount)
+npm run dev
+```
+
+`astro.config.mjs` loads `.env` itself, because Astro only reads dotenv files after the config has
+been evaluated — without that, `S3_*` and `EMDASH_*` are unset under `astro dev` and the middleware
+fails with `MISSING_S3_CONFIG`. Exported environment variables take precedence over `.env`.
+
 Required environment:
 
 | Variable | Purpose |
