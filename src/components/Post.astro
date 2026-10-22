@@ -1,7 +1,9 @@
 ---
 import { PortableText } from "emdash/ui";
+import { Comments, CommentForm } from "emdash/ui/comments";
 import Container from "./Container.astro";
 import "../styles/prose.css";
+import "../styles/comments.css";
 
 interface Props {
   post: any;
@@ -21,6 +23,30 @@ const publishedDate = date
   : "";
 const category = terms.find((t) => (t.taxonomy ?? t.name) === "category");
 const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
+
+// EmDash's built-in comments (emdash/ui/comments) ship English defaults.
+const commentLabels = {
+  heading: (count: number) => (count === 0 ? "暫無留言" : `${count} 則留言`),
+  member: "站內會員",
+  like: "喜歡",
+};
+
+const commentFormLabels = {
+  name: "名稱",
+  email: "電子郵件",
+  comment: "留言內容",
+  submit: "送出留言",
+  submitting: "送出中…",
+  published: "留言已發佈",
+  pending: "留言已送出，待審核後顯示",
+  error: "送出失敗，請稍後再試",
+  networkError: "網絡錯誤，請再試一次",
+};
+
+// Optional Cloudflare Turnstile. Both values are optional: with no site key the
+// widget is skipped, and the server only verifies when EMDASH_TURNSTILE_SECRET_KEY
+// is set. See README → Comments.
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Container>
@@ -49,6 +75,22 @@ const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
     <PortableText value={post.data.content} />
   </div>
   <div class="spacer"></div>
+
+  <div class="post-comments">
+    <Comments
+      collection="posts"
+      contentId={post.data.id}
+      threaded
+      reactions
+      labels={commentLabels}
+    />
+    <CommentForm
+      collection="posts"
+      contentId={post.data.id}
+      labels={commentFormLabels}
+      turnstileSiteKey={turnstileSiteKey}
+    />
+  </div>
 </Container>
 
 <style>

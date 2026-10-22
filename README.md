@@ -116,6 +116,37 @@ npm run backfill:publish-dates -- /app/data/emdash.db            # write
 It only rewrites the columns whose value differs, so it is safe to re-run after seeding again.
 `updatedAt` is the source's last-modified time, which for most posts is years after publication.
 
+## Comments
+
+Comments use **EmDash's built-in system** (`emdash/ui/comments`), not Giscus. Posts are the only
+commentable collection (`"commentsEnabled": true` in `seed/seed.json`), and the post page renders
+`<Comments>` (threaded, with reactions) plus `<CommentForm>` with zh-Hant labels.
+
+Why the switch: no GitHub account is needed to comment, nothing is loaded from a third party, storage
+and moderation live in the same admin and SQLite database, and spam controls ship with it (honeypot,
+per-IP rate limit, optional Turnstile, moderation queue). Giscus instead puts every comment in GitHub
+Discussions, requires readers to sign in to GitHub, and cannot be moderated from EmDash.
+
+Enabling on an existing database is a schema change, not a deploy step — `seed.json` only bootstraps a
+fresh database:
+
+```bash
+npx emdash schema get posts        # confirm commentsEnabled
+# toggle in the admin: Content Types → Posts → Comments
+```
+
+New comments default to **pending** (`commentsModeration: "all"`) and appear once approved under
+Admin → Comments. Configure per collection: moderation mode, auto-approve signed-in users, and
+`commentsClosedAfterDays`. Optional spam protection:
+
+| Variable | Purpose |
+| --- | --- |
+| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (build-time, public) |
+| `EMDASH_TURNSTILE_SECRET_KEY` | server-side verification; the token is ignored without it |
+
+Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
+exclude the comment list or moderation will appear to lag.
+
 ## Notes
 
 - Content was imported from the WordPress REST API and converted to Portable Text; scripts live outside this repo.
