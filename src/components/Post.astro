@@ -1,5 +1,5 @@
 ---
-import { PortableText } from "emdash/ui";
+import Prose from "./prose/Prose.astro";
 import { Comments, CommentForm } from "emdash/ui/comments";
 import Container from "./Container.astro";
 import "../styles/prose.css";
@@ -50,31 +50,31 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Container>
-  <h1 {...post.edit.title}>{post.data.title}</h1>
-  <div class="post-meta">
-    <div class="date">{publishedDate}</div>
-    {category && (
-      <div class="category">
-        分類：<a href={`/category/${category.slug}`}>{category.label}</a>
-      </div>
-    )}
-    {tags.length > 0 && (
-      <div class="tags">
-        標籤：{tags.map((tag, index) => (
-          <>
-            <a href={`/tag/${tag.slug}`} class="tag">{tag.label}</a>
-            {index < tags.length - 1 && <span class="tag-separator">, </span>}
-          </>
-        ))}
-      </div>
-    )}
-  </div>
-  <hr />
-  <div class="spacer"></div>
-  <div class="post-content">
-    <PortableText value={post.data.content} />
-  </div>
-  <div class="spacer"></div>
+  <article class="post">
+    <h1 {...post.edit.title}>{post.data.title}</h1>
+    <div class="post-meta">
+      <div class="date">{publishedDate}</div>
+      {category && (
+        <div class="category">
+          分類：<a href={`/category/${category.slug}`}>{category.label}</a>
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div class="tags">
+          標籤：{tags.map((tag, index) => (
+            <>
+              <a href={`/tag/${tag.slug}`} class="tag">{tag.label}</a>
+              {index < tags.length - 1 && <span class="tag-separator">, </span>}
+            </>
+          ))}
+        </div>
+      )}
+    </div>
+    <hr />
+    <div class="post-content">
+      <Prose value={post.data.content} />
+    </div>
+  </article>
 
   <div class="post-comments">
     <Comments
@@ -107,6 +107,8 @@ h1 {
 }
 .post-content {
   max-width: var(--measure-prose);
+  /* Replaces the two empty .spacer divs that used to flank the prose. */
+  margin-block: var(--space-8);
   margin-inline: auto;
 }
 .category {
@@ -123,9 +125,5 @@ h1 {
 }
 .tag-separator {
   margin-right: 0.3rem;
-}
-.spacer {
-  height: var(--space-6);
-  margin-block-start: var(--space-6);
 }
 </style>

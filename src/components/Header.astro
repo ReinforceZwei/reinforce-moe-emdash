@@ -1,15 +1,21 @@
 ---
+interface Props {
+  /** On the home page the site title is the page's only <h1>; elsewhere it is a span. */
+  isHome?: boolean;
+}
+const { isHome = false } = Astro.props;
+const SiteTitle = isHome ? "h1" : "span";
 ---
-<div class="header">
+<header class="header">
   <div class="container">
-    <div class="site-title">
+    <SiteTitle class="site-title">
       <a href="/">REINFORCE.MOE</a>
-    </div>
+    </SiteTitle>
     <div>
       <a href="/about">關於 Reinforce II</a>
     </div>
   </div>
-</div>
+</header>
 
 <style>
 .header {
@@ -30,5 +36,6 @@
 }
 .site-title {
   font-size: var(--font-size-h5);
+  margin: 0;
 }
 </style>

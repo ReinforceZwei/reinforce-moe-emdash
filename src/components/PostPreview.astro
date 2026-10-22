@@ -67,10 +67,10 @@ const featuredImage =
 const featuredAlt = featuredImage?.alt ?? post.data.title;
 ---
 
-<div>
-  <h1>
+<article class="post-preview">
+  <h2>
     <a href={`/posts/${post.id}`}>{post.data.title}</a>
-  </h1>
+  </h2>
   {featuredImage && (
     <a href={`/posts/${post.id}`} class="post-preview-image">
       <Image image={featuredImage} alt={featuredAlt} />
@@ -99,9 +99,14 @@ const featuredAlt = featuredImage?.alt ?? post.data.title;
     )}
   </div>
   <hr />
-</div>
+</article>
 
 <style>
+/* Cards sit under the page-level <h1>, so their title is an <h2>; the size
+   stays at the display step so the list looks unchanged. */
+.post-preview h2 {
+  font-size: var(--font-size-h1);
+}
 .info-section {
   margin-top: var(--space-6);
   display: flex;

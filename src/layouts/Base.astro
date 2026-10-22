@@ -64,8 +64,10 @@ const pageCtx = createPublicPageContext({
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
-		<Header />
-		<slot />
+		<Header isHome={Astro.url.pathname === "/"} />
+		<main id="main">
+			<slot />
+		</main>
 		<Footer />
 		<EmDashBodyEnd page={pageCtx} />
 	</body>
