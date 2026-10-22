@@ -13,7 +13,8 @@
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "typecheck": "astro check",
-    "backfill:image-dimensions": "node scripts/backfill-image-dimensions.mjs"
+    "backfill:image-dimensions": "node scripts/backfill-image-dimensions.mjs",
+    "backfill:publish-dates": "node scripts/backfill-publish-dates.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.5",
