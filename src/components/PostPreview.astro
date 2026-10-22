@@ -1,79 +1,30 @@
 ---
 import { Image } from "emdash/ui";
+import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
+import { resolvePostImage } from "../lib/content/media";
+import type { PostEntry } from "../lib/content/types";
+import { formatPostDate, postDate } from "../lib/format";
 
 interface Props {
-	post: any;
-	category?: { slug: string; label: string } | null;
-	tags?: { slug: string; label: string }[];
+  post: PostEntry;
+  terms?: NormalizedTerms;
 }
 
-const { post, category = null, tags = [] }: Props = Astro.props;
+const { post, terms = EMPTY_TERMS }: Props = Astro.props;
 
-const date = post.data.publishedAt ?? post.data.createdAt;
-const published = date
-	? new Date(date).toLocaleDateString("zh-TW", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			weekday: "short",
-			timeZone: "Asia/Hong_Kong",
-		})
-	: "";
-const excerpt = post.data.excerpt
-	? String(post.data.excerpt).slice(0, 100) + "..."
-	: "";
-const fi = post.data.featured_image;
-const firstInline = (post.data.content ?? []).find((b: any) => b?._type === "image");
-
-const MEDIA_ROUTE = "/_emdash/api/media/file/";
-
-/**
- * Blocks from the seed carry `asset.url` as the internal media route, and Astro
- * cannot transform a same-origin runtime URL - it emits a srcset of identical
- * URLs instead. Resolve the storage key and ask the storage adapter for the
- * CDN URL so the image goes through /_image like the post body does.
- */
-function toPublicMediaUrl(url?: string | null, storageKey?: string | null): string | null {
-	if (!url) return null;
-	let key = storageKey ?? null;
-	if (!key && url.startsWith(MEDIA_ROUTE)) key = decodeURIComponent(url.slice(MEDIA_ROUTE.length));
-	if (!key) return url;
-	return Astro.locals.emdash?.getPublicMediaUrl?.(key) ?? url;
-}
-
-/**
- * List queries do not expand featured media, so the field often carries only a
- * URL. Dimensions matter: emdash's <Image> only emits a /_image srcset when
- * width and height resolve, otherwise it silently degrades to a plain <img>.
- * Fall back to the first inline block, which carries them after the
- * backfill-image-dimensions script has run.
- */
-const featuredImage =
-	fi?.src || fi?.url
-		? {
-				src: toPublicMediaUrl(fi.src ?? fi.url, fi.meta?.storageKey),
-				alt: fi.alt,
-				width: fi.width,
-				height: fi.height,
-			}
-		: firstInline?.asset?.url
-			? {
-					src: toPublicMediaUrl(firstInline.asset.url, firstInline.asset.meta?.storageKey),
-					alt: firstInline.alt,
-					width: firstInline.width,
-					height: firstInline.height,
-				}
-			: null;
-const featuredAlt = featuredImage?.alt ?? post.data.title;
+const published = formatPostDate(postDate(post));
+const excerpt = post.data.excerpt ? `${String(post.data.excerpt).slice(0, 100)}...` : "";
+const image = resolvePostImage(post, Astro.locals.emdash?.getPublicMediaUrl);
+const { category, tags } = terms;
 ---
 
 <article class="post-preview">
   <h2>
     <a href={`/posts/${post.id}`}>{post.data.title}</a>
   </h2>
-  {featuredImage && (
+  {image && (
     <a href={`/posts/${post.id}`} class="post-preview-image">
-      <Image image={featuredImage} alt={featuredAlt} />
+      <Image image={image} alt={image.alt ?? post.data.title} />
     </a>
   )}
   {excerpt && <p>{excerpt}</p>}

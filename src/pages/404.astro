@@ -1,9 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
 import Container from "../components/Container.astro";
+import { buildPageMeta } from "../lib/seo";
+
+const meta = buildPageMeta("Not Found");
 ---
 
-<Base title="Not Found">
+<Base meta={meta}>
 	<Container>
 		<h1>Page not found</h1>
 		<p>The page you're looking for doesn't exist.</p>

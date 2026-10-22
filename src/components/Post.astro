@@ -2,27 +2,20 @@
 import Prose from "./prose/Prose.astro";
 import { Comments, CommentForm } from "emdash/ui/comments";
 import Container from "./Container.astro";
+import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
+import type { PostEntry } from "../lib/content/types";
+import { formatPostDate, postDate } from "../lib/format";
 import "../styles/prose.css";
 import "../styles/comments.css";
 
 interface Props {
-  post: any;
-  terms?: { taxonomy?: string; name?: string; slug: string; label: string }[];
+  post: PostEntry;
+  terms?: NormalizedTerms;
 }
-const { post, terms = [] }: Props = Astro.props;
+const { post, terms = EMPTY_TERMS }: Props = Astro.props;
 
-const date = post.data.publishedAt ?? post.data.createdAt;
-const publishedDate = date
-  ? new Date(date).toLocaleDateString("zh-TW", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      weekday: "short",
-      timeZone: "Asia/Hong_Kong",
-    })
-  : "";
-const category = terms.find((t) => (t.taxonomy ?? t.name) === "category");
-const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
+const publishedDate = formatPostDate(postDate(post));
+const { category, tags } = terms;
 
 // EmDash's built-in comments (emdash/ui/comments) ship English defaults.
 const commentLabels = {
@@ -51,7 +44,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
 <Container>
   <article class="post">
-    <h1 {...post.edit.title}>{post.data.title}</h1>
+    <h1 {...post.edit?.title}>{post.data.title}</h1>
     <div class="post-meta">
       <div class="date">{publishedDate}</div>
       {category && (

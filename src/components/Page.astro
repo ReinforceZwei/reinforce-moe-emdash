@@ -1,17 +1,18 @@
 ---
 import Prose from "./prose/Prose.astro";
 import Container from "./Container.astro";
+import type { PageEntry } from "../lib/content/types";
 import "../styles/prose.css";
 
 interface Props {
-	page: any;
+	page: PageEntry;
 }
 const { page }: Props = Astro.props;
 ---
 
 <Container>
   <article class="page">
-    <h1 {...page.edit.title}>{page.data.title}</h1>
+    <h1 {...page.edit?.title}>{page.data.title}</h1>
     <hr />
     <div class="post-content">
       <Prose value={page.data.content} />

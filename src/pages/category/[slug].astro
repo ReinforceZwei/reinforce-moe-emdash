@@ -3,11 +3,13 @@ import { getEmDashCollection, getTerm } from "emdash";
 import Base from "../../layouts/Base.astro";
 import Container from "../../components/Container.astro";
 import PostPreview from "../../components/PostPreview.astro";
+import { buildPageMeta } from "../../lib/seo";
 
-const { slug } = Astro.params;
-const termResult = await getTerm("category", slug ?? "");
-const term = termResult?.data ?? termResult;
+const { slug = "" } = Astro.params;
+const termResult = await getTerm("category", slug);
+const term = (termResult ?? null) as { label?: string } | null;
 if (!term) return Astro.rewrite("/404");
+const label = term.label ?? slug;
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
 	where: { category: [slug] },
@@ -15,11 +17,13 @@ const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
 	limit: 20,
 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const meta = buildPageMeta(`分類：${label}`);
 ---
 
-<Base title={`分類：${term.label}`}>
+<Base meta={meta}>
 	<Container>
-		<h1>分類：{term.label}</h1>
+		<h1>分類：{label}</h1>
 		{posts.length === 0 ? (
 			<p>沒有文章。</p>
 		) : (
