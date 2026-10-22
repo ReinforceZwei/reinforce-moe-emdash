@@ -1,27 +1,21 @@
 ---
-import { getEmDashCollection, getTermsForEntries } from "emdash";
 import Base from "../layouts/Base.astro";
-import PostPreview from "../components/PostPreview.astro";
+import PostList from "../components/PostList.astro";
+import Pagination from "../components/Pagination.astro";
 import CategoryList from "../components/CategoryList.astro";
 import TagList from "../components/TagList.astro";
 import Spotlight from "../components/Spotlight.astro";
 import MyProfile from "../components/MyProfile.astro";
-import { splitTerms } from "../lib/content/terms";
+import { getPostList } from "../lib/content/posts";
 import { buildPageMeta } from "../lib/seo";
+import { getPostsPerPage } from "../lib/site";
 
 const cursor = Astro.url.searchParams.get("cursor") || undefined;
-const { entries: posts, cacheHint, nextCursor } = await getEmDashCollection("posts", {
-	orderBy: { published_at: "desc" },
-	limit: 10,
+const { posts, termsByEntry, nextCursor, cacheHint } = await getPostList({
 	cursor,
+	limit: await getPostsPerPage(),
 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
-
-const ids = posts.map((p) => p.data.id);
-const [categoriesByEntry, tagsByEntry] = await Promise.all([
-	getTermsForEntries("posts", ids, "category"),
-	getTermsForEntries("posts", ids, "tag"),
-]);
 
 const meta = buildPageMeta("");
 ---
@@ -36,24 +30,11 @@ const meta = buildPageMeta("");
 			</div>
 
 			<div class="content-column">
-				{posts.map((post) => (
-					<PostPreview
-						post={post}
-						terms={splitTerms(categoriesByEntry.get(post.data.id), tagsByEntry.get(post.data.id))}
-					/>
-				))}
-				{(cursor || nextCursor) && (
-					<nav class="pagination" aria-label="分頁導航">
-						<div class="pagination-controls">
-							{cursor && <a href="/" class="pagination-link prev">← 第一頁</a>}
-							{nextCursor && (
-								<a href={`/?cursor=${encodeURIComponent(nextCursor)}`} class="pagination-link next">
-									下一頁 →
-								</a>
-							)}
-						</div>
-					</nav>
-				)}
+				<PostList posts={posts} termsByEntry={termsByEntry} />
+				<Pagination
+					prevHref={cursor ? "/" : null}
+					nextHref={nextCursor ? `/?cursor=${encodeURIComponent(nextCursor)}` : null}
+				/>
 			</div>
 
 			<div class="side-column">
@@ -70,32 +51,24 @@ const meta = buildPageMeta("");
 	flex-wrap: nowrap;
 	gap: var(--space-6);
 }
-@media (max-width: 781px) {
-	.side-column {
-		flex-basis: 100% !important;
-	}
-	.content-column {
-		flex-basis: 100% !important;
-	}
-	.column-container {
-		flex-wrap: wrap;
-	}
-}
 .side-column {
 	flex-basis: 25%;
 }
 .content-column {
 	flex-basis: 50%;
 }
+/* Declared after the base widths so it wins without !important. */
+@media (max-width: 781px) {
+	.column-container {
+		flex-wrap: wrap;
+	}
+	.side-column,
+	.content-column {
+		flex-basis: 100%;
+	}
+}
 .main-content {
 	padding-left: max(var(--space-3), 4vw);
 	padding-right: max(var(--space-3), 4vw);
-}
-.pagination {
-	margin-top: var(--space-6);
-}
-.pagination-controls {
-	display: flex;
-	justify-content: space-between;
 }
 </style>
