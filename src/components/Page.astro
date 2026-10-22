@@ -1,6 +1,7 @@
 ---
 import { PortableText } from "emdash/ui";
 import Container from "./Container.astro";
+import "../styles/prose.css";
 
 interface Props {
 	page: any;
@@ -19,14 +20,14 @@ const { page }: Props = Astro.props;
 
 <style>
 h1 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 .post-content {
-  max-width: 600px;
+  max-width: var(--measure-prose);
   margin-inline: auto;
 }
 .spacer {
-  height: 32px;
-  margin-block-start: 32px;
+  height: var(--space-6);
+  margin-block-start: var(--space-6);
 }
 </style>

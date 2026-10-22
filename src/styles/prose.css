@@ -1,0 +1,75 @@
+/**
+ * Long-form content contract.
+ *
+ * Replaces trilium.css, which styled HTML exported from Trilium notes. Content
+ * now arrives as Portable Text rendered by EmDash, which emits its own markup
+ * (`.emdash-image`, `.emdash-code`, <figure>/<figcaption>). None of the Trilium
+ * selectors (`.admonition`, `.include-note`, `.image-style-*`, `.image_resized`)
+ * can appear any more.
+ *
+ * Scoped to `.post-content` (the Portable Text wrapper) so it can never leak
+ * into page chrome.
+ */
+
+.post-content > :first-child {
+  margin-top: 0;
+}
+
+.post-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* EmDash renders Portable Text images as <figure class="emdash-image ...">.
+   Its component ships scoped alignment styles; this only normalises spacing. */
+.post-content .emdash-image {
+  margin-block: var(--space-5);
+}
+
+.post-content .emdash-image img {
+  height: auto;
+  max-width: 100%;
+}
+
+.post-content figure {
+  margin-block: var(--space-5);
+}
+
+.post-content figcaption {
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* Quotations (ported from the Trilium stylesheet). */
+.post-content blockquote {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 1rem 2.5rem;
+  background-color: var(--color-quote-bg);
+  border-radius: var(--radius-md);
+}
+
+.post-content blockquote::before {
+  content: '"';
+  position: absolute;
+  top: 0.1em;
+  left: 0.1em;
+  font-family: Georgia, serif;
+  font-size: 4em;
+  line-height: 1;
+  color: var(--color-quote-mark);
+}
+
+.post-content blockquote p {
+  margin: 0.5em 0;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.post-content blockquote p:first-of-type {
+  margin-top: 0;
+}
+
+.post-content blockquote p:last-of-type {
+  margin-bottom: 0;
+}

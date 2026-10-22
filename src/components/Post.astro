@@ -1,23 +1,24 @@
 ---
 import { PortableText } from "emdash/ui";
 import Container from "./Container.astro";
+import "../styles/prose.css";
 
 interface Props {
-	post: any;
-	terms?: { taxonomy?: string; name?: string; slug: string; label: string }[];
+  post: any;
+  terms?: { taxonomy?: string; name?: string; slug: string; label: string }[];
 }
 const { post, terms = [] }: Props = Astro.props;
 
 const date = post.data.publishedAt ?? post.data.createdAt;
 const publishedDate = date
-	? new Date(date).toLocaleDateString("zh-TW", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			weekday: "short",
-			timeZone: "Asia/Hong_Kong",
-		})
-	: "";
+  ? new Date(date).toLocaleDateString("zh-TW", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      weekday: "short",
+      timeZone: "Asia/Hong_Kong",
+    })
+  : "";
 const category = terms.find((t) => (t.taxonomy ?? t.name) === "category");
 const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
 ---
@@ -52,18 +53,18 @@ const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
 
 <style>
 h1 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 .post-meta {
-  margin-top: 2rem;
+  margin-top: var(--space-6);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 .post-content {
-  max-width: 600px;
+  max-width: var(--measure-prose);
   margin-inline: auto;
 }
 .category {
@@ -82,7 +83,7 @@ h1 {
   margin-right: 0.3rem;
 }
 .spacer {
-  height: 32px;
-  margin-block-start: 32px;
+  height: var(--space-6);
+  margin-block-start: var(--space-6);
 }
 </style>

@@ -25,14 +25,33 @@ src/
 ├── pages/
 │   ├── index.astro             # three-column home: spotlight, profile, posts, taxonomies
 │   ├── [slug].astro            # static pages
-│   ├── posts/[slug].astro      # post detail (Portable Text)
+│   ├── posts/[slug].astro      # post detail (Portable Text + comments)
 │   ├── posts/index.astro       # all posts
 │   ├── category/[slug].astro   # category archive
 │   └── tag/[slug].astro        # tag archive
-├── styles/                     # sakura-pink.css, trilium.css, normalize.css
+├── styles/
+│   ├── tokens.css              # design tokens: colour, type, measure, space (single source of truth)
+│   ├── reset.css               # minimal reset (replaces normalize.css)
+│   ├── base.css                # element defaults: headings, links, lists, code, tables, forms
+│   ├── prose.css               # Portable Text content contract (replaces trilium.css)
+│   └── comments.css            # themes EmDash's built-in comment components
 └── assets/                     # logo, profile image, brand icons
 seed/seed.json                  # content model, taxonomies, site settings
 ```
+
+## Styles
+
+There is no vendored CSS. `tokens.css` declares every colour, font size, measure and spacing step;
+`reset.css` and `base.css` apply them to bare elements; component `<style>` blocks only reference
+`var(--…)`. Nothing outside `tokens.css` should contain a hex colour, a font stack or a `px` width.
+
+| Layer | Owns |
+| --- | --- |
+| `tokens.css` | palette, type scale, `--measure-wide` (780px), `--measure-prose` (600px), `--space-*` |
+| `reset.css` | box-model and UA-default normalisation |
+| `base.css` | element defaults (everything `sakura.css` used to own) |
+| `prose.css` | `.post-content`: Portable Text output, figures, captions, blockquotes |
+| `comments.css` | EmDash comment list/form, re-skinned via its `--ec-*` hooks |
 
 ## Running
 

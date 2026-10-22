@@ -103,19 +103,19 @@ const featuredAlt = featuredImage?.alt ?? post.data.title;
 
 <style>
 .info-section {
-  margin-top: 2rem;
+  margin-top: var(--space-6);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
 }
 .category {
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 .tags {
   display: flex;
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   align-items: baseline;
 }
 .tag {
@@ -126,7 +126,7 @@ const featuredAlt = featuredImage?.alt ?? post.data.title;
   margin-right: 0.3rem;
 }
 hr {
-  border: none !important;
+  border: none;
   text-align: center;
 }
 hr::before {
@@ -140,8 +140,8 @@ hr::before {
 /* The <figure>/<img> now come from emdash's <Image>, so target them with :global(). */
 .post-preview-image {
   display: block;
-  margin-top: 4rem;
-  margin-bottom: 3rem;
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-7);
 }
 .post-preview-image :global(img) {
   width: 100%;
