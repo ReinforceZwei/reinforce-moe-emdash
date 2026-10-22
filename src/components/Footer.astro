@@ -1,11 +1,19 @@
 ---
+interface Props {
+  /** Site title from EmDash settings. */
+  siteTitle: string;
+  tagline?: string;
+}
+
+const { siteTitle, tagline = "" } = Astro.props;
 ---
+
 <footer class="footer">
   <div class="inner">
     <div>
-      <a href="/">REINFORCE.MOE</a>
+      <a href="/">{siteTitle}</a>
     </div>
-    <div>EmDash demo</div>
+    {tagline && <div>{tagline}</div>}
   </div>
 </footer>
 

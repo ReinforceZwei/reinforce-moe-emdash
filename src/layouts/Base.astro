@@ -1,5 +1,6 @@
 ---
 import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
+import type { Menu } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import "@fontsource-variable/noto-sans-tc";
@@ -30,6 +31,7 @@ if (Astro.cache?.enabled) {
 const settings = settingsResult.data as { title?: string; tagline?: string };
 const siteTitle = settings?.title ?? SITE_NAME;
 const siteTagline = settings?.tagline ?? "碎碎唸";
+const menu = menuResult.data as Menu | null;
 
 const fullTitle = meta.title ? `${meta.title} - ${siteTitle}` : siteTitle;
 
@@ -59,11 +61,11 @@ const pageCtx = createPublicPageContext({
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
-		<Header isHome={Astro.url.pathname === "/"} />
+		<Header isHome={Astro.url.pathname === "/"} menu={menu} />
 		<main id="main">
 			<slot />
 		</main>
-		<Footer />
+		<Footer siteTitle={siteTitle} tagline={siteTagline} />
 		<EmDashBodyEnd page={pageCtx} />
 	</body>
 </html>
