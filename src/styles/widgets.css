@@ -1,0 +1,100 @@
+/**
+ * EmDash widget areas, themed to the site.
+ *
+ * EmDash renders every widget with its own markup:
+ *   .widget-area > .widget > (.widget__title, .widget__content)
+ * and the built-in components use .widget-search, .widget-categories,
+ * .widget-tags, .widget-recent-posts and .widget-archives with BEM children.
+ * Those classes are not ours, so these rules are global and scoped under the
+ * `.widget-slot` wrapper to keep them out of the rest of the site.
+ */
+
+.widget-slot .widget-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.widget-slot .widget__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+.widget-slot .widget__content > :last-child {
+  margin-bottom: 0;
+}
+
+/* Every built-in widget renders a list; strip the UA styling once. */
+.widget-slot .widget__content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.widget-slot .widget__content li {
+  margin-bottom: var(--space-1);
+}
+
+.widget-slot .widget__content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Post counts next to terms and archive buckets. */
+.widget-slot .widget-categories__count,
+.widget-slot .widget-tags__count,
+.widget-slot .widget-archives__count {
+  margin-left: 0.25em;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+/* Tag cloud. */
+.widget-slot .widget-tags__cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  align-items: baseline;
+}
+
+/* Recent posts. */
+.widget-slot .widget-recent-posts__date {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.8em;
+}
+
+.widget-slot .widget-recent-posts__thumbnail {
+  float: left;
+  margin-right: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* Search form: input + button on one row. */
+.widget-slot .widget-search {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.widget-slot .widget-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.widget-slot .widget-search__button {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+}
+
+/* Menu widget. */
+.widget-slot .widget__menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.widget-slot .widget__menu li {
+  margin-bottom: var(--space-1);
+}

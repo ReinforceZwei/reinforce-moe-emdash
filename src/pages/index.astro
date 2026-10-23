@@ -2,9 +2,9 @@
 import Base from "../layouts/Base.astro";
 import PostList from "../components/PostList.astro";
 import Pagination from "../components/Pagination.astro";
+import WidgetSlot from "../components/WidgetSlot.astro";
 import CategoryList from "../components/CategoryList.astro";
 import TagList from "../components/TagList.astro";
-import Spotlight from "../components/Spotlight.astro";
 import MyProfile from "../components/MyProfile.astro";
 import { getPostList } from "../lib/content/posts";
 import { buildPageMeta } from "../lib/seo";
@@ -22,11 +22,17 @@ const meta = buildPageMeta("");
 
 <Base meta={meta}>
 	<div class="main-content">
-		<Spotlight />
+		<WidgetSlot name="home-spotlight">
+			<div class="spotlight-fallback">
+				<img src="/hertaa1.gif" alt="くるくる" width="250" height="250" />
+			</div>
+		</WidgetSlot>
 
 		<div class="column-container">
 			<div class="side-column">
-				<MyProfile />
+				<WidgetSlot name="home-left">
+					<MyProfile />
+				</WidgetSlot>
 			</div>
 
 			<div class="content-column">
@@ -38,8 +44,10 @@ const meta = buildPageMeta("");
 			</div>
 
 			<div class="side-column">
-				<CategoryList />
-				<TagList />
+				<WidgetSlot name="home-right">
+					<CategoryList />
+					<TagList />
+				</WidgetSlot>
 			</div>
 		</div>
 	</div>
@@ -70,5 +78,8 @@ const meta = buildPageMeta("");
 .main-content {
 	padding-left: max(var(--space-3), 4vw);
 	padding-right: max(var(--space-3), 4vw);
+}
+.spotlight-fallback {
+	text-align: center;
 }
 </style>
