@@ -336,6 +336,85 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "home-spotlight",
+			"label": "Home Spotlight",
+			"description": "Home page spotlight strip; the static gif shows while this area is empty (add a content widget to override it)",
+			"widgets": []
+		},
+		{
+			"name": "home-left",
+			"label": "Home Left Column",
+			"description": "Home page left column; the profile card shows while this area is empty",
+			"widgets": [
+				{
+					"type": "content",
+					"title": "關於",
+					"content": [
+						{
+							"_type": "block",
+							"_key": "k1",
+							"style": "normal",
+							"markDefs": [],
+							"children": [
+								{
+									"_type": "span",
+									"_key": "s1",
+									"text": "一個喜歡日本動畫和資訊科技的程序員，自稱 Reinforce II，平日沒事就玩遊戲，搞伺服器，品嘗美食。",
+									"marks": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": "menu",
+					"title": "導覽",
+					"menuName": "primary"
+				}
+			]
+		},
+		{
+			"name": "home-right",
+			"label": "Home Right Column",
+			"description": "Home page right column; category and tag lists show while this area is empty",
+			"widgets": [
+				{
+					"type": "component",
+					"title": "搜尋",
+					"componentId": "core:search",
+					"props": {
+						"placeholder": "搜尋文章…"
+					}
+				},
+				{
+					"type": "component",
+					"title": "分類",
+					"componentId": "core:categories",
+					"props": {
+						"showCount": true
+					}
+				},
+				{
+					"type": "component",
+					"title": "標籤",
+					"componentId": "core:tags",
+					"props": {
+						"showCount": true,
+						"limit": 20
+					}
+				},
+				{
+					"type": "component",
+					"title": "最新文章",
+					"componentId": "core:recent-posts",
+					"props": {
+						"count": 5,
+						"showDate": true
+					}
+				}
+			]
 		}
 	],
 	"content": {

@@ -1,0 +1,34 @@
+---
+/**
+ * A widget area with a static fallback.
+ *
+ * `WidgetArea` renders nothing when the area is missing or empty, so a bare
+ * `<WidgetArea>` blanks that region on a live site between deploying the code
+ * and an editor saving the first widget. This reads the area first: widgets win
+ * when present, the slotted fallback renders otherwise.
+ *
+ * It also registers the area's cache hint, so an editor's save is visible on
+ * cached routes instead of looking like it did not apply.
+ */
+import { WidgetArea } from "emdash/ui";
+import { getWidgetAreaWithCacheHint } from "emdash";
+import "../styles/widgets.css";
+
+interface Props {
+  /** Widget area name, as created in Admin → Widgets. */
+  name: string;
+  /** Extra class for the wrapper (positioning from the page). */
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+
+const { data: area, cacheHint } = await getWidgetAreaWithCacheHint(name);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const hasWidgets = Boolean(area?.widgets?.length);
+---
+
+<div class:list={["widget-slot", className]}>
+  {hasWidgets ? <WidgetArea name={name} /> : <slot />}
+</div>

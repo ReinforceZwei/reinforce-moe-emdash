@@ -21,9 +21,12 @@ EmDash adapters are chosen in `astro.config.mjs`; the S3 adapter reads `S3_*` va
 ```
 src/
 ├── layouts/Base.astro          # page shell: EmDash head/body, header, footer, global CSS
-├── components/                 # Header, Footer, PostPreview, Post, Page, CategoryList, TagList, Spotlight, MyProfile
+├── layouts/Archive.astro       # title + post list + pagination (/posts, category, tag)
+├── components/                 # Header, Footer, PostPreview, Post, Page, PostList, Pagination,
+│                               # WidgetSlot, CategoryList, TagList, MyProfile (fallbacks)
 ├── pages/
-│   ├── index.astro             # three-column home: spotlight, profile, posts, taxonomies
+│   ├── index.astro             # home: widget slots around the post list
+│   ├── search.astro            # results page for the search widget
 │   ├── [slug].astro            # static pages
 │   ├── posts/[slug].astro      # post detail (Portable Text + comments)
 │   ├── posts/index.astro       # all posts
@@ -34,9 +37,10 @@ src/
 │   ├── reset.css               # minimal reset (replaces normalize.css)
 │   ├── base.css                # element defaults: headings, links, lists, code, tables, forms
 │   ├── prose.css               # Portable Text content contract (replaces trilium.css)
-│   └── comments.css            # themes EmDash's built-in comment components
+│   ├── comments.css            # themes EmDash's built-in comment components
+│   └── widgets.css             # themes EmDash widget areas and core widgets
 └── assets/                     # logo, profile image, brand icons
-seed/seed.json                  # content model, taxonomies, site settings
+seed/seed.json                  # content model, taxonomies, site settings, widget areas
 ```
 
 ## Styles
@@ -52,6 +56,54 @@ There is no vendored CSS. `tokens.css` declares every colour, font size, measure
 | `base.css` | element defaults (everything `sakura.css` used to own) |
 | `prose.css` | `.post-content`: Portable Text output, figures, captions, blockquotes |
 | `comments.css` | EmDash comment list/form, re-skinned via its `--ec-*` hooks |
+| `widgets.css` | widget areas + core widget markup (`.widget-categories`, `.widget-search`, …) |
+
+## Widgets
+
+The home page has no hardcoded sidebars: three EmDash widget areas replace them, and the old static
+content is the fallback shown while an area is empty.
+
+| Area name | Region | Fallback when empty |
+| --- | --- | --- |
+| `home-spotlight` | strip above the columns | the animated gif |
+| `home-left` | left column | `MyProfile` card |
+| `home-right` | right column | category + tag lists |
+
+`WidgetSlot.astro` does the guarding: it reads the area, renders `<WidgetArea>` when it has widgets,
+otherwise the slotted fallback, and registers the area's cache hint. A bare `<WidgetArea>` renders
+nothing when the area is missing, which would blank the region between deploying code and an editor
+saving a widget.
+
+Built-in widget types you can drop into any area (Admin → Widgets):
+
+| Type | What it renders |
+| --- | --- |
+| Content | a Portable Text block — the "content block" widget |
+| Menu | a menu by name (e.g. `primary`) |
+| Component: `core:search` | search form (`placeholder` prop) |
+| Component: `core:categories` | category list (`showCount`, `hierarchical`) |
+| Component: `core:tags` | tag cloud (`showCount`, `limit`) |
+| Component: `core:recent-posts` | latest posts (`count`, `showThumbnails`, `showDate`, `urlTemplate`) |
+| Component: `core:archives` | monthly/yearly archive links (`type`, `limit`) |
+
+`core:search` submits `GET /search?q=`, so the site ships `src/pages/search.astro`: it calls EmDash's
+`search()` over `posts` and `pages`, renders the sanitised `<mark>` snippets, and paginates with the
+result cursor. The widget's submit button is labelled "Search" upstream and cannot be translated —
+only the placeholder is configurable.
+
+`seed/seed.json` pre-populates all three areas for a **fresh** database.
+
+On an existing database, create areas with those exact names in **Admin → Widgets** — that is the
+safe path. Seeding is not a targeted migration: `npx emdash seed … --on-conflict update` also
+re-applies collections, settings and (unless `--no-content`) every content entry from the seed, so it
+would overwrite live edits. If you must script it, at minimum skip content:
+
+```bash
+npx emdash seed seed/seed.json --no-content --on-conflict update
+```
+
+That still re-applies schema, settings and menus, and it **replaces the widgets of the areas it
+touches**, so treat it as a staging/reset tool rather than a production migration.
 
 ## Running
 

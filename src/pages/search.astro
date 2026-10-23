@@ -1,0 +1,80 @@
+---
+import { search } from "emdash";
+import Base from "../layouts/Base.astro";
+import Container from "../components/Container.astro";
+import Pagination from "../components/Pagination.astro";
+import { buildPageMeta } from "../lib/seo";
+
+// Target of the built-in `core:search` widget, which submits GET /search?q=.
+const q = (Astro.url.searchParams.get("q") ?? "").trim();
+const cursor = Astro.url.searchParams.get("cursor") || undefined;
+
+const results = q
+	? await search(q, { collections: ["posts", "pages"], limit: 20, cursor })
+	: { items: [], nextCursor: undefined };
+
+/** Entries link by collection: posts live under /posts, pages at the root. */
+function hrefFor(result: { collection: string; slug: string | null }): string {
+	const slug = result.slug ?? "";
+	return result.collection === "posts" ? `/posts/${slug}` : `/${slug}`;
+}
+
+const meta = buildPageMeta(q ? `搜尋：${q}` : "搜尋");
+---
+
+<Base meta={meta}>
+	<Container>
+		<h1>{q ? `搜尋：${q}` : "搜尋"}</h1>
+
+		{!q && <p>請輸入關鍵字。</p>}
+		{q && results.items.length === 0 && <p>沒有符合「{q}」的結果。</p>}
+
+		{results.items.length > 0 && (
+			<div class="search-results">
+				{results.items.map((result) => (
+					<article class="search-result">
+						<h2>
+							<a href={hrefFor(result)}>{result.title ?? result.slug}</a>
+						</h2>
+						<p class="search-result__collection">
+							{result.collection === "posts" ? "文章" : "頁面"}
+						</p>
+						{result.snippet && (
+							// Sanitised by EmDash: escaped text with <mark> around matches.
+							<p class="search-result__snippet" set:html={result.snippet} />
+						)}
+					</article>
+				))}
+			</div>
+		)}
+
+		<Pagination
+			prevHref={cursor ? `/search?q=${encodeURIComponent(q)}` : null}
+			nextHref={
+				results.nextCursor
+					? `/search?q=${encodeURIComponent(q)}&cursor=${encodeURIComponent(results.nextCursor)}`
+					: null
+			}
+		/>
+	</Container>
+</Base>
+
+<style>
+.search-result {
+	margin-bottom: var(--space-6);
+}
+.search-result h2 {
+	margin-bottom: var(--space-1);
+	font-size: var(--font-size-h3);
+}
+.search-result__collection {
+	margin-bottom: var(--space-1);
+	color: var(--color-muted);
+	font-size: 0.85rem;
+}
+.search-result__snippet :global(mark) {
+	padding: 0 0.1em;
+	color: inherit;
+	background-color: var(--color-surface);
+}
+</style>
