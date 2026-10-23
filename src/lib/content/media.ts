@@ -1,12 +1,23 @@
 /**
- * Resolving post images to a URL Astro can optimise.
+ * Resolving a post's featured image to a URL Astro can optimise.
  *
- * List queries do not expand `featured_image`, so the field can carry only a
- * URL — often the internal `/_emdash/api/media/file/<key>` route, which Astro
- * cannot transform (it would emit a srcset of identical URLs). Resolve the
- * storage key and ask the storage adapter for the CDN URL instead. Width and
- * height matter too: EmDash's `<Image>` only emits a `/_image` srcset when both
- * are known, otherwise it silently degrades to a plain `<img>`.
+ * Only the featured image is used. The body's first inline image is *not* a
+ * stand-in: a post without `featured_image` renders no card image at all.
+ *
+ * List queries do not expand media, so `featured_image` can arrive in several
+ * shapes, and a resolver that only understands one of them silently returns
+ * nothing (which is how a previous "featured only" attempt blanked every card):
+ *
+ *   - expanded:        { id, src, width, height, alt }
+ *   - reference only:  { id, meta: { storageKey } }  — no src/url at all
+ *   - internal route:  { url: "/_emdash/api/media/file/<key>" }
+ *   - legacy string:   "https://…" or the internal route as a bare string
+ *
+ * All of them resolve through the storage adapter to the CDN URL, because
+ * Astro cannot transform the internal route (it would emit a srcset of
+ * identical URLs). Width and height are preserved: EmDash's `<Image>` only
+ * emits a `/_image` srcset when both are known, otherwise it degrades to a
+ * plain `<img>`.
  */
 
 import type { MediaRef, PostEntry } from "./types";
@@ -43,63 +54,43 @@ export function toPublicMediaUrl(
   return resolve(key) ?? url;
 }
 
-function fromMediaRef(ref: MediaRef, resolve?: MediaUrlResolver): ResolvedImage | null {
-  const key = ref.meta?.storageKey ?? keyFromMediaRoute(ref.url);
-  const src = toPublicMediaUrl(ref.src ?? ref.url, key, resolve);
+function fromFeatured(
+  value: string | MediaRef | null | undefined,
+  resolve?: MediaUrlResolver,
+): ResolvedImage | null {
+  if (!value) return null;
+
+  // Legacy/imported shape: the field holds the URL itself.
+  if (typeof value === "string") {
+    const key = keyFromMediaRoute(value);
+    return {
+      id: key ?? value,
+      src: toPublicMediaUrl(value, key, resolve) ?? value,
+    };
+  }
+
+  const key = value.meta?.storageKey ?? keyFromMediaRoute(value.url);
+  const url = value.src ?? value.url ?? null;
+
+  // No URL but a storage key: ask the adapter for the public URL directly.
+  const src = url ? toPublicMediaUrl(url, key, resolve) : key ? (resolve?.(key) ?? null) : null;
   if (!src) return null;
 
   return {
     // `<Image>` requires a media id; any stable identifier works for local
     // media, so fall back to the storage key or the resolved URL.
-    id: ref.id ?? key ?? src,
+    id: value.id ?? key ?? src,
     src,
-    alt: ref.alt ?? undefined,
-    width: ref.width ?? undefined,
-    height: ref.height ?? undefined,
+    alt: value.alt ?? undefined,
+    width: value.width ?? undefined,
+    height: value.height ?? undefined,
   };
 }
 
-interface InlineImageBlock {
-  _type?: string;
-  alt?: string | null;
-  width?: number | null;
-  height?: number | null;
-  asset?: {
-    _ref?: string | null;
-    url?: string | null;
-    meta?: { storageKey?: string | null } | null;
-  } | null;
-}
-
-/**
- * The image to show for a post: its featured image, or the first inline image
- * in the body (which carries dimensions after the backfill script has run).
- */
+/** The image to show for a post: its featured image, or nothing. */
 export function resolvePostImage(
   post: PostEntry,
   resolve?: MediaUrlResolver,
 ): ResolvedImage | null {
-  const featured = post.data.featured_image;
-  if (featured) {
-    const resolved = fromMediaRef(featured, resolve);
-    if (resolved) return resolved;
-  }
-
-  const inline = (post.data.content ?? []).find(
-    (block) => (block as InlineImageBlock)._type === "image",
-  ) as InlineImageBlock | undefined;
-
-  if (!inline?.asset?.url) return null;
-
-  return fromMediaRef(
-    {
-      id: inline.asset._ref,
-      url: inline.asset.url,
-      alt: inline.alt,
-      width: inline.width,
-      height: inline.height,
-      meta: inline.asset.meta,
-    },
-    resolve,
-  );
+  return fromFeatured(post.data.featured_image, resolve);
 }
