@@ -1,26 +1,23 @@
 ---
 import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
+import type { Menu } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import "@fontsource-variable/noto-sans-tc";
 import "@fontsource-variable/noto-sans-mono";
-import "../styles/sakura-pink.css";
-import "../styles/trilium.css";
+import "../styles/tokens.css";
+import "../styles/reset.css";
+import "../styles/base.css";
 import original from "../assets/original.png";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import { SITE_NAME, type PageMeta } from "../lib/seo";
 
 interface Props {
-	title: string;
-	pageTitle?: string | null;
-	description?: string | null;
-	image?: string | null;
-	canonical?: string | null;
-	content?: { collection: string; id: string; slug?: string | null };
+	meta: PageMeta;
 }
 
-const { title, pageTitle, description, image, canonical, content } =
-	Astro.props;
+const { meta } = Astro.props;
 
 const [settingsResult, menuResult] = await Promise.all([
 	getSiteSettingsWithCacheHint(),
@@ -32,21 +29,22 @@ if (Astro.cache?.enabled) {
 }
 
 const settings = settingsResult.data as { title?: string; tagline?: string };
-const siteTitle = settings?.title ?? "Reinforce.moe";
+const siteTitle = settings?.title ?? SITE_NAME;
 const siteTagline = settings?.tagline ?? "碎碎唸";
+const menu = menuResult.data as Menu | null;
 
-const fullTitle = title ? `${title} - Reinforce.moe` : siteTitle;
+const fullTitle = meta.title ? `${meta.title} - ${siteTitle}` : siteTitle;
 
 const pageCtx = createPublicPageContext({
 	Astro,
-	kind: content ? "content" : "custom",
+	kind: meta.content ? "content" : "custom",
 	pageType: "website",
 	title: fullTitle,
-	pageTitle: pageTitle ?? title,
-	description: description ?? siteTagline,
-	canonical,
-	image,
-	content,
+	pageTitle: meta.pageTitle ?? meta.title,
+	description: meta.description ?? siteTagline,
+	canonical: meta.canonical,
+	image: meta.image,
+	content: meta.content,
 	siteName: siteTitle,
 });
 ---
@@ -63,9 +61,11 @@ const pageCtx = createPublicPageContext({
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
-		<Header />
-		<slot />
-		<Footer />
+		<Header isHome={Astro.url.pathname === "/"} menu={menu} />
+		<main id="main">
+			<slot />
+		</main>
+		<Footer siteTitle={siteTitle} tagline={siteTagline} />
 		<EmDashBodyEnd page={pageCtx} />
 	</body>
 </html>

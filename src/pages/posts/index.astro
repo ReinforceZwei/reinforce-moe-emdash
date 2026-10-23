@@ -1,37 +1,24 @@
 ---
-import { getEmDashCollection, getTermsForEntries } from "emdash";
-import Base from "../../layouts/Base.astro";
-import Container from "../../components/Container.astro";
-import PostPreview from "../../components/PostPreview.astro";
+import Archive from "../../layouts/Archive.astro";
+import { getPostList } from "../../lib/content/posts";
+import { buildPageMeta } from "../../lib/seo";
+import { getPostsPerPage } from "../../lib/site";
 
 const cursor = Astro.url.searchParams.get("cursor") || undefined;
-const { entries: posts, cacheHint, nextCursor } = await getEmDashCollection("posts", {
-	orderBy: { published_at: "desc" },
-	limit: 20,
+const { posts, termsByEntry, nextCursor, cacheHint } = await getPostList({
 	cursor,
+	limit: await getPostsPerPage(),
 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-const ids = posts.map((p) => p.data.id);
-const [categoriesByEntry, tagsByEntry] = await Promise.all([
-	getTermsForEntries("posts", ids, "category"),
-	getTermsForEntries("posts", ids, "tag"),
-]);
+const heading = "所有文章";
 ---
 
-<Base title="所有文章">
-	<Container>
-		<h1>所有文章</h1>
-		{posts.map((post) => (
-			<PostPreview
-				post={post}
-				category={(categoriesByEntry.get(post.data.id) ?? [])[0] ?? null}
-				tags={tagsByEntry.get(post.data.id) ?? []}
-			/>
-		))}
-		<nav class="pagination" aria-label="分頁導航">
-			{cursor && <a href="/posts">第一頁</a>}
-			{nextCursor && <a href={`/posts?cursor=${encodeURIComponent(nextCursor)}`}>下一頁 →</a>}
-		</nav>
-	</Container>
-</Base>
+<Archive
+	meta={buildPageMeta(heading)}
+	heading={heading}
+	posts={posts}
+	termsByEntry={termsByEntry}
+	prevHref={cursor ? "/posts" : null}
+	nextHref={nextCursor ? `/posts?cursor=${encodeURIComponent(nextCursor)}` : null}
+/>

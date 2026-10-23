@@ -1,0 +1,24 @@
+---
+import PostPreview from "./PostPreview.astro";
+import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
+import type { PostEntry } from "../lib/content/types";
+
+interface Props {
+  posts: PostEntry[];
+  /** Terms per entry, keyed by the entry's database id. */
+  termsByEntry?: Map<string, NormalizedTerms>;
+  emptyLabel?: string;
+}
+
+const { posts, termsByEntry, emptyLabel = "沒有文章。" } = Astro.props;
+---
+
+{
+  posts.length === 0 ? (
+    <p>{emptyLabel}</p>
+  ) : (
+    posts.map((post) => (
+      <PostPreview post={post} terms={termsByEntry?.get(post.data.id) ?? EMPTY_TERMS} />
+    ))
+  )
+}

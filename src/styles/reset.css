@@ -1,0 +1,64 @@
+/**
+ * Minimal reset.
+ *
+ * Replaces normalize.css v5 (2016, 460 lines) with only the normalisation this
+ * site actually depends on. Layout defaults are deliberately left close to the
+ * user agent's so the element layer in `base.css` stays predictable.
+ *
+ * Box sizing is *not* set globally: the page shell applies padding to elements
+ * with a max-width, and changing the box model would silently narrow every
+ * measure on the site.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+figcaption,
+blockquote {
+  margin: 0;
+}
+
+main {
+  display: block;
+}
+
+img,
+video {
+  max-width: 100%;
+  border-style: none;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font: inherit;
+  margin: 0;
+}
+
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+  appearance: button;
+}
+
+[hidden] {
+  display: none;
+}

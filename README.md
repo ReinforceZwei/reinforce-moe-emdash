@@ -25,14 +25,33 @@ src/
 ├── pages/
 │   ├── index.astro             # three-column home: spotlight, profile, posts, taxonomies
 │   ├── [slug].astro            # static pages
-│   ├── posts/[slug].astro      # post detail (Portable Text)
+│   ├── posts/[slug].astro      # post detail (Portable Text + comments)
 │   ├── posts/index.astro       # all posts
 │   ├── category/[slug].astro   # category archive
 │   └── tag/[slug].astro        # tag archive
-├── styles/                     # sakura-pink.css, trilium.css, normalize.css
+├── styles/
+│   ├── tokens.css              # design tokens: colour, type, measure, space (single source of truth)
+│   ├── reset.css               # minimal reset (replaces normalize.css)
+│   ├── base.css                # element defaults: headings, links, lists, code, tables, forms
+│   ├── prose.css               # Portable Text content contract (replaces trilium.css)
+│   └── comments.css            # themes EmDash's built-in comment components
 └── assets/                     # logo, profile image, brand icons
 seed/seed.json                  # content model, taxonomies, site settings
 ```
+
+## Styles
+
+There is no vendored CSS. `tokens.css` declares every colour, font size, measure and spacing step;
+`reset.css` and `base.css` apply them to bare elements; component `<style>` blocks only reference
+`var(--…)`. Nothing outside `tokens.css` should contain a hex colour, a font stack or a `px` width.
+
+| Layer | Owns |
+| --- | --- |
+| `tokens.css` | palette, type scale, `--measure-wide` (780px), `--measure-prose` (600px), `--space-*` |
+| `reset.css` | box-model and UA-default normalisation |
+| `base.css` | element defaults (everything `sakura.css` used to own) |
+| `prose.css` | `.post-content`: Portable Text output, figures, captions, blockquotes |
+| `comments.css` | EmDash comment list/form, re-skinned via its `--ec-*` hooks |
 
 ## Running
 
@@ -96,6 +115,37 @@ npm run backfill:publish-dates -- /app/data/emdash.db            # write
 
 It only rewrites the columns whose value differs, so it is safe to re-run after seeding again.
 `updatedAt` is the source's last-modified time, which for most posts is years after publication.
+
+## Comments
+
+Comments use **EmDash's built-in system** (`emdash/ui/comments`), not Giscus. Posts are the only
+commentable collection (`"commentsEnabled": true` in `seed/seed.json`), and the post page renders
+`<Comments>` (threaded, with reactions) plus `<CommentForm>` with zh-Hant labels.
+
+Why the switch: no GitHub account is needed to comment, nothing is loaded from a third party, storage
+and moderation live in the same admin and SQLite database, and spam controls ship with it (honeypot,
+per-IP rate limit, optional Turnstile, moderation queue). Giscus instead puts every comment in GitHub
+Discussions, requires readers to sign in to GitHub, and cannot be moderated from EmDash.
+
+Enabling on an existing database is a schema change, not a deploy step — `seed.json` only bootstraps a
+fresh database:
+
+```bash
+npx emdash schema get posts        # confirm commentsEnabled
+# toggle in the admin: Content Types → Posts → Comments
+```
+
+New comments default to **pending** (`commentsModeration: "all"`) and appear once approved under
+Admin → Comments. Configure per collection: moderation mode, auto-approve signed-in users, and
+`commentsClosedAfterDays`. Optional spam protection:
+
+| Variable | Purpose |
+| --- | --- |
+| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (build-time, public) |
+| `EMDASH_TURNSTILE_SECRET_KEY` | server-side verification; the token is ignored without it |
+
+Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
+exclude the comment list or moderation will appear to lag.
 
 ## Notes
 

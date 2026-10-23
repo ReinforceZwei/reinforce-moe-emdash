@@ -1,0 +1,41 @@
+/**
+ * EmDash built-in comments, re-skinned to the site palette.
+ *
+ * The comment components ship neutral greys and expose their colours through
+ * custom properties (--ec-form-*, --ec-comment-border). Setting those on the
+ * wrapper themes the whole block without overriding individual rules.
+ *
+ * Specificity note: EmDash's own styles are Astro-scoped
+ * (`.ec-comments[data-astro-cid-…]`), so overrides that target the same element
+ * need more than one class. `section.ec-comments` inside `.post-comments` does.
+ */
+
+.post-comments {
+  max-width: var(--measure-prose);
+  margin-inline: auto;
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+
+  --ec-form-gap: var(--space-3);
+  --ec-form-border: var(--color-surface);
+  --ec-form-bg: var(--color-surface);
+  --ec-form-color: var(--color-input-text);
+  --ec-form-user-bg: var(--color-surface);
+  --ec-form-user-border: var(--color-surface);
+  --ec-form-submit-bg: var(--color-surface-strong);
+  --ec-form-submit-color: var(--color-on-strong);
+  --ec-form-success-color: var(--color-success);
+  --ec-form-error-color: var(--color-danger);
+}
+
+.post-comments section.ec-comments {
+  --ec-comment-border: var(--border-width) solid var(--color-surface);
+}
+
+.post-comments .ec-comments-heading {
+  margin-bottom: var(--space-5);
+}
+
+.post-comments .ec-comment-date {
+  opacity: 0.55;
+}

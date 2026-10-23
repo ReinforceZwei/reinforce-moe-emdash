@@ -1,29 +1,21 @@
 ---
-import { getEmDashCollection, getTerm } from "emdash";
-import Base from "../../layouts/Base.astro";
-import Container from "../../components/Container.astro";
-import PostPreview from "../../components/PostPreview.astro";
+import { getTerm } from "emdash";
+import Archive from "../../layouts/Archive.astro";
+import { getPostList } from "../../lib/content/posts";
+import { buildPageMeta } from "../../lib/seo";
+import { getPostsPerPage } from "../../lib/site";
 
-const { slug } = Astro.params;
-const termResult = await getTerm("category", slug ?? "");
-const term = termResult?.data ?? termResult;
+const { slug = "" } = Astro.params;
+const termResult = await getTerm("category", slug);
+const term = (termResult ?? null) as { label?: string } | null;
 if (!term) return Astro.rewrite("/404");
 
-const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+const heading = `分類：${term.label ?? slug}`;
+const { posts, termsByEntry, cacheHint } = await getPostList({
 	where: { category: [slug] },
-	orderBy: { published_at: "desc" },
-	limit: 20,
+	limit: await getPostsPerPage(),
 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 ---
 
-<Base title={`分類：${term.label}`}>
-	<Container>
-		<h1>分類：{term.label}</h1>
-		{posts.length === 0 ? (
-			<p>沒有文章。</p>
-		) : (
-			posts.map((post) => <PostPreview post={post} />)
-		)}
-	</Container>
-</Base>
+<Archive meta={buildPageMeta(heading)} heading={heading} posts={posts} termsByEntry={termsByEntry} />

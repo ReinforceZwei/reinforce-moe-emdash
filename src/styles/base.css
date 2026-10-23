@@ -1,0 +1,262 @@
+/**
+ * Element defaults.
+ *
+ * This is the layer sakura.css used to own: how bare headings, links, lists,
+ * code, tables and form controls look. It is intentionally limited to element
+ * selectors — anything about a *component* belongs in that component.
+ *
+ * Rule order mirrors the cascade the site rendered with before, so the visual
+ * result is unchanged while every value now resolves through `tokens.css`.
+ */
+
+html {
+  font-size: 100%; /* 16px */
+  font-family: var(--font-sans);
+}
+
+body {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+/* ---------- Headings ---------- */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: var(--line-height-tight);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  margin-block: 1.67rem 0.83rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+h4 {
+  font-size: var(--font-size-h4);
+}
+
+h5 {
+  font-size: var(--font-size-h5);
+}
+
+h6 {
+  font-size: var(--font-size-h6);
+}
+
+/* ---------- Text ---------- */
+
+p {
+  margin-block: 0 1.4rem;
+}
+
+small,
+sub,
+sup {
+  font-size: var(--font-size-small);
+}
+
+hr {
+  border-color: var(--color-rule);
+}
+
+a {
+  color: var(--color-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25ch;
+}
+
+a:hover {
+  text-decoration-style: dashed;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+  margin-block: 0 1.4rem;
+}
+
+li {
+  margin-bottom: 0.4em;
+}
+
+img,
+video {
+  height: auto;
+  max-width: 100%;
+}
+
+/* ---------- Code ---------- */
+
+code,
+kbd,
+pre,
+samp,
+tt {
+  font-family: var(--font-mono);
+}
+
+pre {
+  display: block;
+  padding: 1em;
+  margin-block: 0 1.4rem;
+  overflow-x: auto;
+  font-size: var(--font-size-code);
+  background-color: var(--color-surface);
+}
+
+:not(pre) > code,
+samp {
+  padding: 0.2em 0.4em;
+  font-size: var(--font-size-code);
+  color: var(--color-code-text);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-subtle);
+  white-space: pre-wrap;
+}
+
+a > code {
+  color: inherit;
+}
+
+kbd {
+  display: inline-block;
+  padding: 0.1em 0.3em;
+  font-size: var(--font-size-code);
+  line-height: 1;
+  vertical-align: middle;
+  color: var(--color-code-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-kbd-border);
+  border-bottom-color: var(--color-kbd-border-bottom);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 -1px 0 var(--color-kbd-shadow);
+}
+
+pre > code {
+  padding: 0;
+  font-size: 1em;
+  white-space: pre;
+  background-color: transparent;
+}
+
+/* ---------- Tables ---------- */
+
+table {
+  width: 100%;
+  margin-bottom: 2rem;
+  text-align: justify;
+  border-collapse: collapse;
+}
+
+td,
+th {
+  padding: 0.5em;
+  border-bottom: var(--border-width) solid var(--color-surface);
+}
+
+/* ---------- Forms ---------- */
+
+input,
+textarea,
+select {
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  color: var(--color-input-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-border-input-focus);
+  outline: 0;
+}
+
+input[type="checkbox"]:focus {
+  outline: 1px dotted var(--color-border-input-focus);
+}
+
+textarea {
+  width: 100%;
+}
+
+.button,
+button,
+input[type="submit"],
+input[type="reset"],
+input[type="button"],
+input[type="file"]::file-selector-button {
+  display: inline-block;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--color-on-strong);
+  background-color: var(--color-surface-strong);
+  border: var(--border-width) solid var(--color-surface-strong);
+  border-radius: 1px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.button[disabled],
+button[disabled],
+input[type="submit"][disabled],
+input[type="reset"][disabled],
+input[type="button"][disabled],
+input[type="file"][disabled]::file-selector-button {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.button:hover,
+button:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover,
+input[type="button"]:hover,
+input[type="file"]::file-selector-button:hover {
+  color: var(--color-on-strong);
+  background-color: var(--color-surface-strong-hover);
+  outline: 0;
+}
+
+.button:focus-visible,
+button:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible,
+input[type="button"]:focus-visible,
+input[type="file"]::file-selector-button:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+}
+
+label,
+legend,
+fieldset {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}

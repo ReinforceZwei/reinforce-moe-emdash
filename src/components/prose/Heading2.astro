@@ -1,0 +1,20 @@
+---
+/**
+ * Renders a Portable Text block authored as `h1` as an `<h2>`.
+ *
+ * A page owns exactly one `<h1>` — its title. Imported content (WordPress,
+ * Trilium) often starts with `h1` inside the body, which produced a second
+ * `<h1>` on the page. Only `h1` is demoted: `h2`/`h3` keep their relative
+ * order, so the outline stays nested and nothing can collide with the title.
+ *
+ * Mirrors emdash's own Block component: pull the Portable Text props out of
+ * `node`/`index`/`isInline` and forward the rest as attributes.
+ */
+import type { BlockProps } from "astro-portabletext/types";
+
+type Props = Omit<BlockProps, "node"> & { node: BlockProps["node"] };
+
+const { node: _node, index: _index, isInline: _isInline, ...attrs } = Astro.props;
+---
+
+<h2 {...attrs}><slot /></h2>

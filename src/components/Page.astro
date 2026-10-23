@@ -1,32 +1,33 @@
 ---
-import { PortableText } from "emdash/ui";
+import Prose from "./prose/Prose.astro";
 import Container from "./Container.astro";
+import type { PageEntry } from "../lib/content/types";
+import "../styles/prose.css";
 
 interface Props {
-	page: any;
+	page: PageEntry;
 }
 const { page }: Props = Astro.props;
 ---
 
 <Container>
-  <h1 {...page.edit.title}>{page.data.title}</h1>
-  <hr />
-  <div class="spacer"></div>
-  <div class="post-content">
-    <PortableText value={page.data.content} />
-  </div>
+  <article class="page">
+    <h1 {...page.edit?.title}>{page.data.title}</h1>
+    <hr />
+    <div class="post-content">
+      <Prose value={page.data.content} />
+    </div>
+  </article>
 </Container>
 
 <style>
 h1 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 .post-content {
-  max-width: 600px;
+  max-width: var(--measure-prose);
+  /* Replaces the empty .spacer div that used to sit above the prose. */
+  margin-block-start: var(--space-8);
   margin-inline: auto;
-}
-.spacer {
-  height: 32px;
-  margin-block-start: 32px;
 }
 </style>

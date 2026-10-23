@@ -1,0 +1,24 @@
+---
+/**
+ * Portable Text renderer for the site.
+ *
+ * Thin wrapper over EmDash's renderer that enforces the page-level heading
+ * contract (see Heading2). Use this instead of importing `PortableText`
+ * directly, so every content surface gets the same rules.
+ *
+ * `value` is typed loosely on purpose: EmDash and astro-portabletext ship
+ * separate copies of the Portable Text types, so the cast to the renderer's
+ * type happens here, once.
+ */
+import { PortableText } from "emdash/ui";
+import type { PortableTextProps } from "astro-portabletext/types";
+import Heading2 from "./Heading2.astro";
+
+interface Props {
+  value?: unknown;
+}
+
+const blocks = (Astro.props.value ?? []) as PortableTextProps["value"];
+---
+
+<PortableText value={blocks} components={{ block: { h1: Heading2 } }} />

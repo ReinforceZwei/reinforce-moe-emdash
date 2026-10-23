@@ -1,0 +1,46 @@
+---
+interface Props {
+  prevHref?: string | null;
+  nextHref?: string | null;
+  prevLabel?: string;
+  nextLabel?: string;
+  ariaLabel?: string;
+}
+
+const {
+  prevHref,
+  nextHref,
+  prevLabel = "← 第一頁",
+  nextLabel = "下一頁 →",
+  ariaLabel = "分頁導航",
+} = Astro.props;
+---
+
+{
+  (prevHref || nextHref) && (
+    <nav class="pagination" aria-label={ariaLabel}>
+      <div class="pagination-controls">
+        {prevHref && (
+          <a href={prevHref} class="pagination-link prev">
+            {prevLabel}
+          </a>
+        )}
+        {nextHref && (
+          <a href={nextHref} class="pagination-link next">
+            {nextLabel}
+          </a>
+        )}
+      </div>
+    </nav>
+  )
+}
+
+<style>
+.pagination {
+  margin-top: var(--space-6);
+}
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+}
+</style>

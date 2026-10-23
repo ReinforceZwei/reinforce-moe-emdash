@@ -1,7 +1,9 @@
 ---
-import { getEmDashEntry, getEntryTerms, getSeoMeta, decodeSlug } from "emdash";
+import { getEmDashEntry, getEntryTerms, decodeSlug } from "emdash";
 import Base from "../../layouts/Base.astro";
 import Post from "../../components/Post.astro";
+import { splitTerms } from "../../lib/content/terms";
+import { buildEntryMeta } from "../../lib/seo";
 
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
@@ -10,26 +12,16 @@ const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
 if (!post) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-const termsRaw = await getEntryTerms("posts", post.data.id);
-const terms = (termsRaw ?? []).map((t: any) => ({
-	slug: t.slug,
-	label: t.label,
-	taxonomy: t.taxonomy?.name ?? t.taxonomy,
-}));
+// Two queries, because a term does not say which taxonomy it belongs to.
+const [categoryTerms, tagTerms] = await Promise.all([
+	getEntryTerms("posts", post.data.id, "category"),
+	getEntryTerms("posts", post.data.id, "tag"),
+]);
+const terms = splitTerms(categoryTerms, tagTerms);
 
-const seo = getSeoMeta(post, {
-	siteTitle: "Reinforce.moe",
-	siteUrl: Astro.url.origin,
-	path: Astro.url.pathname,
-});
+const meta = buildEntryMeta(post, { collection: "posts", slug, url: Astro.url });
 ---
 
-<Base
-	title={post.data.title}
-	pageTitle={post.data.title}
-	description={post.data.excerpt ?? undefined}
-	canonical={seo.canonical}
-	content={{ collection: "posts", id: post.data.id, slug }}
->
+<Base meta={meta}>
 	<Post post={post} terms={terms} />
 </Base>

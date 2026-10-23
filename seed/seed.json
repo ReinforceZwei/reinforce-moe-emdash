@@ -52,6 +52,7 @@
 				"seo"
 			],
 			"urlPattern": "/posts/{slug}",
+			"commentsEnabled": true,
 			"fields": [
 				{
 					"slug": "title",

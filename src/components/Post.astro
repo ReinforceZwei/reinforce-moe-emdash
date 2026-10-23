@@ -1,69 +1,107 @@
 ---
-import { PortableText } from "emdash/ui";
+import Prose from "./prose/Prose.astro";
+import { Comments, CommentForm } from "emdash/ui/comments";
 import Container from "./Container.astro";
+import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
+import type { PostEntry } from "../lib/content/types";
+import { formatPostDate, postDate } from "../lib/format";
+import "../styles/prose.css";
+import "../styles/comments.css";
 
 interface Props {
-	post: any;
-	terms?: { taxonomy?: string; name?: string; slug: string; label: string }[];
+  post: PostEntry;
+  terms?: NormalizedTerms;
 }
-const { post, terms = [] }: Props = Astro.props;
+const { post, terms = EMPTY_TERMS }: Props = Astro.props;
 
-const date = post.data.publishedAt ?? post.data.createdAt;
-const publishedDate = date
-	? new Date(date).toLocaleDateString("zh-TW", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			weekday: "short",
-			timeZone: "Asia/Hong_Kong",
-		})
-	: "";
-const category = terms.find((t) => (t.taxonomy ?? t.name) === "category");
-const tags = terms.filter((t) => (t.taxonomy ?? t.name) === "tag");
+const publishedDate = formatPostDate(postDate(post));
+const { category, tags } = terms;
+
+// EmDash's built-in comments (emdash/ui/comments) ship English defaults.
+const commentLabels = {
+  heading: (count: number) => (count === 0 ? "暫無留言" : `${count} 則留言`),
+  member: "站內會員",
+  like: "喜歡",
+};
+
+const commentFormLabels = {
+  name: "名稱",
+  email: "電子郵件",
+  comment: "留言內容",
+  submit: "送出留言",
+  submitting: "送出中…",
+  published: "留言已發佈",
+  pending: "留言已送出，待審核後顯示",
+  error: "送出失敗，請稍後再試",
+  networkError: "網絡錯誤，請再試一次",
+};
+
+// Optional Cloudflare Turnstile. Both values are optional: with no site key the
+// widget is skipped, and the server only verifies when EMDASH_TURNSTILE_SECRET_KEY
+// is set. See README → Comments.
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Container>
-  <h1 {...post.edit.title}>{post.data.title}</h1>
-  <div class="post-meta">
-    <div class="date">{publishedDate}</div>
-    {category && (
-      <div class="category">
-        分類：<a href={`/category/${category.slug}`}>{category.label}</a>
-      </div>
-    )}
-    {tags.length > 0 && (
-      <div class="tags">
-        標籤：{tags.map((tag, index) => (
-          <>
-            <a href={`/tag/${tag.slug}`} class="tag">{tag.label}</a>
-            {index < tags.length - 1 && <span class="tag-separator">, </span>}
-          </>
-        ))}
-      </div>
-    )}
+  <article class="post">
+    <h1 {...post.edit?.title}>{post.data.title}</h1>
+    <div class="post-meta">
+      <div class="date">{publishedDate}</div>
+      {category && (
+        <div class="category">
+          分類：<a href={`/category/${category.slug}`}>{category.label}</a>
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div class="tags">
+          標籤：{tags.map((tag, index) => (
+            <>
+              <a href={`/tag/${tag.slug}`} class="tag">{tag.label}</a>
+              {index < tags.length - 1 && <span class="tag-separator">, </span>}
+            </>
+          ))}
+        </div>
+      )}
+    </div>
+    <hr />
+    <div class="post-content">
+      <Prose value={post.data.content} />
+    </div>
+  </article>
+
+  <div class="post-comments">
+    <Comments
+      collection="posts"
+      contentId={post.data.id}
+      threaded
+      reactions
+      labels={commentLabels}
+    />
+    <CommentForm
+      collection="posts"
+      contentId={post.data.id}
+      labels={commentFormLabels}
+      turnstileSiteKey={turnstileSiteKey}
+    />
   </div>
-  <hr />
-  <div class="spacer"></div>
-  <div class="post-content">
-    <PortableText value={post.data.content} />
-  </div>
-  <div class="spacer"></div>
 </Container>
 
 <style>
 h1 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 .post-meta {
-  margin-top: 2rem;
+  margin-top: var(--space-6);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 .post-content {
-  max-width: 600px;
+  max-width: var(--measure-prose);
+  /* Replaces the two empty .spacer divs that used to flank the prose. */
+  margin-block: var(--space-8);
   margin-inline: auto;
 }
 .category {
@@ -80,9 +118,5 @@ h1 {
 }
 .tag-separator {
   margin-right: 0.3rem;
-}
-.spacer {
-  height: 32px;
-  margin-block-start: 32px;
 }
 </style>

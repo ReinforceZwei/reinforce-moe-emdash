@@ -1,27 +1,35 @@
 ---
+interface Props {
+  /** Site title from EmDash settings. */
+  siteTitle: string;
+  tagline?: string;
+}
+
+const { siteTitle, tagline = "" } = Astro.props;
 ---
-<div class="footer">
+
+<footer class="footer">
   <div class="inner">
     <div>
-      <a href="/">REINFORCE.MOE</a>
+      <a href="/">{siteTitle}</a>
     </div>
-    <div>EmDash demo</div>
+    {tagline && <div>{tagline}</div>}
   </div>
-</div>
+</footer>
 
 <style>
 .footer {
-  padding-top: 8rem;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+  padding-top: var(--space-10);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
 }
 .inner {
-  max-width: 780px;
+  max-width: var(--measure-wide);
   display: flex;
   justify-content: space-between;
   margin-left: auto;
   margin-right: auto;
-  padding-top: 4rem;
-  padding-bottom: 4rem;
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-8);
 }
 </style>

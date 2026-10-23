@@ -1,0 +1,35 @@
+---
+/**
+ * Standard archive page: title, post list, pagination.
+ *
+ * Used by /posts, /category/[slug] and /tag/[slug]. The home page shares the
+ * list and pagination components but keeps its own three-column shell.
+ */
+import Base from "./Base.astro";
+import Container from "../components/Container.astro";
+import PostList from "../components/PostList.astro";
+import Pagination from "../components/Pagination.astro";
+import type { NormalizedTerms } from "../lib/content/terms";
+import type { PostEntry } from "../lib/content/types";
+import type { PageMeta } from "../lib/seo";
+
+interface Props {
+  meta: PageMeta;
+  heading: string;
+  posts: PostEntry[];
+  termsByEntry?: Map<string, NormalizedTerms>;
+  emptyLabel?: string;
+  prevHref?: string | null;
+  nextHref?: string | null;
+}
+
+const { meta, heading, posts, termsByEntry, emptyLabel, prevHref, nextHref } = Astro.props;
+---
+
+<Base meta={meta}>
+  <Container>
+    <h1>{heading}</h1>
+    <PostList posts={posts} termsByEntry={termsByEntry} emptyLabel={emptyLabel} />
+    <Pagination prevHref={prevHref} nextHref={nextHref} />
+  </Container>
+</Base>
