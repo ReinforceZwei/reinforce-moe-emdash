@@ -45,7 +45,7 @@ export interface PostData {
    * happens once, in Prose.astro, instead of failing at every call site.
    */
   content?: unknown[] | null;
-  featured_image?: MediaRef | null;
+  featured_image?: MediaRef | string | null;
   publishedAt?: Date | string | null;
   createdAt?: Date | string | null;
 }
