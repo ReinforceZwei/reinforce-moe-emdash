@@ -148,10 +148,17 @@ understands:
 "asset": { "$media": { "url": "https://media.reinforce.moe/<storageKey>", "alt": "...", "filename": "..." } }
 ```
 
-Applying the seed therefore downloads each image (121 files), stores it in the configured storage and
-rewrites the block to a real `asset._ref`. Progress on a fresh SQLite database: 27 entries, 37 terms,
-120 media created (3 deduplicated by content hash). Pass `--skip-media` to keep external URLs instead
-of copying the files.
+Applying the seed therefore downloads each image (123 inline refs plus 16 featured images), stores it in
+the configured storage and rewrites the reference to real media. Progress on a fresh SQLite database:
+27 entries, 37 terms, ~120 media created (deduplicated by content hash). Pass `--skip-media` to keep
+external URLs instead of copying the files.
+
+**Featured images are part of the seed.** Posts that had a featured image on the WordPress site carry
+one as a top-level `featured_image: { "$media": { … } }` — the same form as inline blocks — so a seed
+with storage produces a real media reference and the card image is optimised. 16 of the 25 posts have
+one; the other nine have none on WordPress and therefore render no card image (see Notes). With
+`--skip-media` the reference resolves to the external WordPress URL, which Astro serves as a plain
+unoptimised `<img>` because the dimensions are unknown.
 
 **Timestamps do not survive a seed.** The seed format has no date fields: `apply.ts` creates every
 non-draft entry with `publishedAt: new Date()`, and `export-seed` does not emit the timestamps either.
