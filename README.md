@@ -91,12 +91,19 @@ Built-in widget types you can drop into any area (Admin → Widgets):
 result cursor. The widget's submit button is labelled "Search" upstream and cannot be translated —
 only the placeholder is configurable.
 
-`seed/seed.json` pre-populates all three areas for a **fresh** database. On an existing database
-either add areas with those exact names in Admin → Widgets, or create them from the seed:
+`seed/seed.json` pre-populates all three areas for a **fresh** database.
+
+On an existing database, create areas with those exact names in **Admin → Widgets** — that is the
+safe path. Seeding is not a targeted migration: `npx emdash seed … --on-conflict update` also
+re-applies collections, settings and (unless `--no-content`) every content entry from the seed, so it
+would overwrite live edits. If you must script it, at minimum skip content:
 
 ```bash
-npx emdash seed seed/seed.json --on-conflict update   # creates missing areas, replaces their widgets
+npx emdash seed seed/seed.json --no-content --on-conflict update
 ```
+
+That still re-applies schema, settings and menus, and it **replaces the widgets of the areas it
+touches**, so treat it as a staging/reset tool rather than a production migration.
 
 ## Running
 
