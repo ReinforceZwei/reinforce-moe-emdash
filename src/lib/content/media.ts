@@ -59,16 +59,47 @@ function fromMediaRef(ref: MediaRef, resolve?: MediaUrlResolver): ResolvedImage 
   };
 }
 
+interface InlineImageBlock {
+  _type?: string;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+  asset?: {
+    _ref?: string | null;
+    url?: string | null;
+    meta?: { storageKey?: string | null } | null;
+  } | null;
+}
+
 /**
- * The image to show for a post: its featured image. Posts without one render
- * no image — the body's first inline image is not a stand-in.
+ * The image to show for a post: its featured image, or the first inline image
+ * in the body (which carries dimensions after the backfill script has run).
  */
 export function resolvePostImage(
   post: PostEntry,
   resolve?: MediaUrlResolver,
 ): ResolvedImage | null {
   const featured = post.data.featured_image;
-  if (!featured) return null;
+  if (featured) {
+    const resolved = fromMediaRef(featured, resolve);
+    if (resolved) return resolved;
+  }
 
-  return fromMediaRef(featured, resolve);
+  const inline = (post.data.content ?? []).find(
+    (block) => (block as InlineImageBlock)._type === "image",
+  ) as InlineImageBlock | undefined;
+
+  if (!inline?.asset?.url) return null;
+
+  return fromMediaRef(
+    {
+      id: inline.asset._ref,
+      url: inline.asset.url,
+      alt: inline.alt,
+      width: inline.width,
+      height: inline.height,
+      meta: inline.asset.meta,
+    },
+    resolve,
+  );
 }
