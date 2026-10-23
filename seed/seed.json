@@ -1378,6 +1378,13 @@
 				"status": "published",
 				"data": {
 					"title": "Parsec：遠端遊戲的一塊拼圖",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2023/06/output-onlinepngtools.png",
+							"alt": "",
+							"filename": "output-onlinepngtools.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "image",
@@ -1533,6 +1540,13 @@
 				"status": "published",
 				"data": {
 					"title": "使用Docker來建立Apache+PHP網頁伺服器",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2023/06/image-1.png",
+							"alt": "",
+							"filename": "image-1.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -1859,6 +1873,13 @@
 				"status": "published",
 				"data": {
 					"title": "體驗華強北牌Apple Pencil",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2023/06/IMG_0708.jpeg",
+							"alt": "",
+							"filename": "IMG_0708.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -2242,6 +2263,13 @@
 				"status": "published",
 				"data": {
 					"title": "迷你遊戲PC 零刻SER6 PRO VEST",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2023/06/0FF9EC12-755F-4632-9902-97BB5B5DBCC0.jpg",
+							"alt": "",
+							"filename": "0FF9EC12-755F-4632-9902-97BB5B5DBCC0.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -2326,6 +2354,13 @@
 				"status": "published",
 				"data": {
 					"title": "Synology DS923+ NAS更改Raid類型",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2023/06/IMG_0772.jpeg",
+							"alt": "",
+							"filename": "IMG_0772.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -3039,6 +3074,13 @@
 				"status": "published",
 				"data": {
 					"title": "蔚藍檔案 兩週年紀念 – 復刻經典棒球帽收藏盒",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2024/01/402596042_370692475468997_79082623049628736_n.jpg",
+							"alt": "",
+							"filename": "402596042_370692475468997_79082623049628736_n.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "image",
@@ -3254,6 +3296,13 @@
 				"status": "published",
 				"data": {
 					"title": "Nothing Phone (2a) 微開箱：闊別10年的Android",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2024/03/IMG_1641.jpeg",
+							"alt": "",
+							"filename": "IMG_1641.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -3569,6 +3618,13 @@
 				"status": "published",
 				"data": {
 					"title": "Coder OSS：屬於自己的Codespaces",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2024/04/image-13.png",
+							"alt": "",
+							"filename": "image-13.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "image",
@@ -4863,6 +4919,13 @@
 				"status": "published",
 				"data": {
 					"title": "第一次海外旅行就奉獻給台灣FF43開拓動漫展",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2024/08/img_1984-scaled.jpg",
+							"alt": "",
+							"filename": "img_1984-scaled.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -5280,6 +5343,13 @@
 				"status": "published",
 				"data": {
 					"title": "蔚藍檔案 官方商店 立牌開箱",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2024/12/IMG_2418-2.jpeg",
+							"alt": "",
+							"filename": "IMG_2418-2.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -5469,6 +5539,13 @@
 				"status": "published",
 				"data": {
 					"title": "下空少女 FF44 周邊",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2025/02/IMG_2587.jpeg",
+							"alt": "",
+							"filename": "IMG_2587.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "image",
@@ -5732,6 +5809,13 @@
 				"status": "published",
 				"data": {
 					"title": "[Drums] Guitar Pro 8 Accents Above",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2025/03/圖片.png",
+							"alt": "",
+							"filename": "圖片.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "image",
@@ -6139,6 +6223,13 @@
 				"status": "published",
 				"data": {
 					"title": "第二年旅行繼續台灣FF45開拓動漫展",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2025/08/IMG_3166.jpeg",
+							"alt": "",
+							"filename": "IMG_3166.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -6535,6 +6626,13 @@
 				"status": "published",
 				"data": {
 					"title": "Lolikoo工作室 妃姬杯",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2025/08/IMG_2800.jpeg",
+							"alt": "",
+							"filename": "IMG_2800.jpeg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -7187,6 +7285,13 @@
 				"status": "published",
 				"data": {
 					"title": "2025年度總結",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2026/01/image-2.png",
+							"alt": "",
+							"filename": "image-2.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -7619,6 +7724,13 @@
 				"status": "published",
 				"data": {
 					"title": "「異環」三測一點點感想",
+					"featured_image": {
+						"$media": {
+							"url": "https://reinforce.moe/wp-content/uploads/2026/02/image-1.png",
+							"alt": "",
+							"filename": "image-1.png"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
