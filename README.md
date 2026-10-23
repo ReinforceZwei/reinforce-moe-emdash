@@ -175,6 +175,26 @@ npm run backfill:publish-dates -- /app/data/emdash.db            # write
 It only rewrites the columns whose value differs, so it is safe to re-run after seeding again.
 `updatedAt` is the source's last-modified time, which for most posts is years after publication.
 
+**Slugs are stored decoded.** EmDash keeps `ec_<collection>.slug` as the raw Unicode slug and the
+routes call `decodeSlug(Astro.params.slug)` before looking entries up. Content imported with
+percent-encoded slugs (`%e7%ac%ac%e4%b8%80...`) therefore never matches and 404s. The backfill
+decodes `ec_posts.slug`, `ec_pages.slug` and `taxonomies.slug` in place:
+
+```bash
+npm run backfill:decode-slugs -- /app/data/emdash.db --dry-run   # preview
+npm run backfill:decode-slugs -- /app/data/emdash.db            # write
+```
+
+It only touches encoded values and aborts on decoded collisions, so it is safe to re-run.
+
+A database that was seeded and then imported can hold two rows for the same CJK term — one raw and
+one encoded — because `(name, slug, locale)` only collides after decoding. `--dedupe-orphan-terms`
+deletes the copy that no content references before decoding:
+
+```bash
+npm run backfill:decode-slugs -- /app/data/emdash.db --dedupe-orphan-terms
+```
+
 ## Comments
 
 Comments use **EmDash's built-in system** (`emdash/ui/comments`), not Giscus. Posts are the only

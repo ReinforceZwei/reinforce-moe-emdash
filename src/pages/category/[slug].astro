@@ -1,11 +1,13 @@
 ---
-import { getTerm } from "emdash";
+import { decodeSlug, getTerm } from "emdash";
 import Archive from "../../layouts/Archive.astro";
 import { getPostList } from "../../lib/content/posts";
 import { buildPageMeta } from "../../lib/seo";
 import { getPostsPerPage } from "../../lib/site";
 
-const { slug = "" } = Astro.params;
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
 const termResult = await getTerm("category", slug);
 const term = (termResult ?? null) as { label?: string } | null;
 if (!term) return Astro.rewrite("/404");

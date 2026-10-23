@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "typecheck": "astro check",
+    "backfill:decode-slugs": "node scripts/backfill-decode-slugs.mjs",
     "backfill:image-dimensions": "node scripts/backfill-image-dimensions.mjs",
     "backfill:publish-dates": "node scripts/backfill-publish-dates.mjs"
   },
