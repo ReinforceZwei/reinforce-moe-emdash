@@ -141,6 +141,28 @@ Required environment:
 The first request runs EmDash migrations and applies the seed's content model. Open `/_emdash/admin` to complete setup
 (passkey registration) and create the first admin.
 
+## Email
+
+Magic links, invites and account recovery need a provider plugin for EmDash's `email:deliver` hook.
+`emdash-smtp` is installed and registered in `astro.config.mjs`; without it the admin reports "No
+email provider is configured" and invites have to be copied by hand.
+
+Its provider credentials are **plugin settings stored in the database**, not environment variables —
+the plugin reads no `process.env` at all, so putting an API key in `.env` or compose does nothing.
+Paste the key on the plugin's admin page, then pick the provider under Settings → Email (exactly one
+delivers at a time) and use **Send test email**. Supported natively, among others: Resend, Postmark,
+Amazon SES, Brevo, Mailgun, SendGrid, SMTP2GO, Mailjet, MailerSend, Zoho, Mandrill, plus generic SMTP.
+
+This site sends through Resend from `reinforce.moe` while the domain's MX stays on iCloud+:
+
+- Resend only needs a return-path on `send.reinforce.moe` and its own DKIM selector
+  (`resend._domainkey`), neither of which collides with iCloud's `MX @` or `sig1._domainkey` CNAME.
+- **Never publish a second `v=spf1` record.** If Resend's dashboard asks for an apex SPF, merge the
+  include into the existing one (`v=spf1 include:icloud.com include:amazonses.com ~all`); two SPF
+  records at the same name is a permerror and breaks outbound mail through iCloud too.
+- Verify a real send by checking a Gmail "Show original" for `spf=pass dkim=pass dmarc=pass` — the
+  admin's test button only proves the API accepted the request.
+
 ## Seed
 
 `seed/seed.json` is generated from the running site with `emdash export-seed --with-content all`

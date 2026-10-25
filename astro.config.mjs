@@ -4,6 +4,7 @@ import node from "@astrojs/node";
 import react from "@astrojs/react";
 import { defineConfig, sessionDrivers } from "astro/config";
 import emdash, { s3 } from "emdash/astro";
+import { emdashSmtp } from "emdash-smtp";
 import { sqlite } from "emdash/db";
 import { loadEnv } from "vite";
 
@@ -72,6 +73,11 @@ export default defineConfig({
 			// site stores is served from a host that does not have it (404). Hence: env first
 			// (`.env` is loaded above), production domain as the default.
 			storage: s3({ publicUrl: process.env.S3_PUBLIC_URL || "https://media.reinforce.moe" }),
+			// Email delivery (magic links, invites, account recovery). The provider
+			// credentials are plugin settings stored in the database — enter the API key on
+			// the plugin's admin page — and exactly one provider delivers at a time, so pick
+			// it under Settings → Email. Without a provider, invites must be copied by hand.
+			plugins: [emdashSmtp()],
 		}),
 	],
 	devToolbar: { enabled: false },
