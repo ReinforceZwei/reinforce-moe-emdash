@@ -124,6 +124,12 @@ npm run dev
 been evaluated — without that, `S3_*` and `EMDASH_*` are unset under `astro dev` and the middleware
 fails with `MISSING_S3_CONFIG`. Exported environment variables take precedence over `.env`.
 
+Sessions — what keeps a signed-in admin signed in — live in `data/sessions`, beside the database. The
+store is pinned in `astro.config.mjs` because @astrojs/node otherwise defaults it to
+`node_modules/.astro/sessions`, inside the container layer: every `docker compose up -d` or image
+update recreates the container, discards it, and the admin comes back to a 401. Keep `data/` on a
+persistent volume (the compose file mounts it) and the sessions survive deploys.
+
 Required environment:
 
 | Variable | Purpose |

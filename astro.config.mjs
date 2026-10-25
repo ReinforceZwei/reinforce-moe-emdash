@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
-import { defineConfig } from "astro/config";
+import { defineConfig, sessionDrivers } from "astro/config";
 import emdash, { s3 } from "emdash/astro";
 import { sqlite } from "emdash/db";
 import { loadEnv } from "vite";
@@ -25,13 +25,26 @@ for (const [key, value] of Object.entries(loadEnv(mode, process.cwd(), ""))) {
 // here because SQLite creates the database file but never its parent directory — a fresh clone
 // has no data/ and the first request would fail with ERR_SQLITE_ERROR 14.
 const databasePath = path.resolve(process.env.EMDASH_DB_PATH || "/app/data/emdash.db");
+
+// Sessions (how a signed-in admin stays signed in) live beside the database. Without an
+// explicit driver @astrojs/node configures `<cacheDir>/sessions`, i.e.
+// /app/node_modules/.astro/sessions — inside the image layer, not the mounted volume — so
+// every container recreate (`docker compose up -d`, every image update) discards them and
+// the admin comes back with a 401. Pinning the base keeps sessions across deploys; the
+// path follows the database so `npm run dev` outside Docker works too.
+const sessionPath = path.resolve(
+	process.env.EMDASH_SESSION_PATH || path.join(path.dirname(databasePath), "sessions"),
+);
 try {
 	mkdirSync(path.dirname(databasePath), { recursive: true });
+	mkdirSync(sessionPath, { recursive: true });
 } catch (error) {
 	// Best effort: `astro build` evaluates this file on machines that have no /app (and no
 	// write access to it), and the build must not fail there. At runtime the SQLite open
 	// reports the real problem instead.
-	console.warn(`[emdash] could not create ${path.dirname(databasePath)}: ${error.code}`);
+	console.warn(
+		`[emdash] could not create ${path.dirname(databasePath)} or ${sessionPath}: ${error.code}`,
+	);
 }
 
 // Media stays on S3 (Cloudflare R2), configured through S3_* environment vars.
@@ -40,6 +53,11 @@ export default defineConfig({
 	adapter: node({
 		mode: "standalone",
 	}),
+	// Astro only configures a driver when none is set, so this replaces the adapter's
+	// image-layer default (see sessionPath above) rather than conflicting with it.
+	session: {
+		driver: sessionDrivers.fsLite({ base: sessionPath }),
+	},
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
