@@ -58,6 +58,36 @@ const pageCtx = createPublicPageContext({
 		<meta name="generator" content={Astro.generator} />
 		<title>{fullTitle}</title>
 		<EmDashHead page={pageCtx} />
+		{
+			/*
+			 * Google Analytics 4 (G-LZ7NMQ1R85). Kept in the layout rather than a
+			 * runtime "header & footer code" plugin so gtag.js loads with the head
+			 * instead of after an extra fetch — a late tag drops fast bounces.
+			 *
+			 * `is:inline` is required: without it Astro bundles the bootstrap as a
+			 * deferred ES module, which runs after gtag.js and breaks dataLayer.
+			 * `import.meta.env.PROD` keeps `astro dev`/preview traffic out of the
+			 * stats. The measurement ID is public, so it is written literally (it
+			 * appears in both tags) and the tags survive without any client JS.
+			 */
+			import.meta.env.PROD && (
+				<>
+					<script
+						is:inline
+						async
+						src="https://www.googletagmanager.com/gtag/js?id=G-LZ7NMQ1R85"
+					/>
+					<script is:inline>
+						window.dataLayer = window.dataLayer || [];
+						function gtag() {
+							dataLayer.push(arguments);
+						}
+						gtag("js", new Date());
+						gtag("config", "G-LZ7NMQ1R85");
+					</script>
+				</>
+			)
+		}
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
