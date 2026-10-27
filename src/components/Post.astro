@@ -39,7 +39,12 @@ const commentFormLabels = {
 // Optional Cloudflare Turnstile. Both values are optional: with no site key the
 // widget is skipped, and the server only verifies when EMDASH_TURNSTILE_SECRET_KEY
 // is set. See README → Comments.
-const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+//
+// Read `process.env`, not `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY`: Vite
+// statically replaces `import.meta.env.*` during the build, which would bake the
+// key (or `undefined`) into the image and make the runtime env in compose/dev
+// useless. This page is server-rendered, so the frontmatter runs per request.
+const turnstileSiteKey = process.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Container>

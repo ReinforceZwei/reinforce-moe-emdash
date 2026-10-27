@@ -248,8 +248,13 @@ Admin → Comments. Configure per collection: moderation mode, auto-approve sign
 
 | Variable | Purpose |
 | --- | --- |
-| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (build-time, public) |
+| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (public; read at request time) |
 | `EMDASH_TURNSTILE_SECRET_KEY` | server-side verification; the token is ignored without it |
+
+Both are read from `process.env` **per request**, so they can be set in compose's `env_file` and take
+effect after a restart. Do not switch the site key back to `import.meta.env.PUBLIC_…`: Vite inlines
+that at build time, which leaves the CI-built image without a widget — and with the secret set,
+verification fails closed and every comment is rejected.
 
 Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
 exclude the comment list or moderation will appear to lag.
