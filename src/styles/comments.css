@@ -39,3 +39,21 @@
 .post-comments .ec-comment-date {
   opacity: 0.55;
 }
+
+/*
+ * A comment spliced in by CommentLiveUpdate after a successful submit: a short
+ * highlight so the reader notices it appear, then it fades back to normal.
+ */
+.post-comments .ec-comment-item--new .ec-comment {
+  animation: ec-comment-arrives 1.8s ease-out;
+}
+
+@keyframes ec-comment-arrives {
+  from {
+    background-color: var(--color-surface);
+  }
+
+  to {
+    background-color: transparent;
+  }
+}

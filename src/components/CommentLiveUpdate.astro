@@ -1,0 +1,103 @@
+---
+/**
+ * Shows a just-published comment without a page reload.
+ *
+ * `Comments` is server-rendered and `CommentForm` only POSTs, so a reader who
+ * submits a comment sees nothing change until they refresh. This script closes
+ * that gap: it watches the submission response (it never modifies or replays it),
+ * and when the comment was auto-approved it re-fetches the page, lifts the new
+ * `<li>` out of the fresh markup and appends it to the live list.
+ *
+ * Reusing the server markup — instead of rendering the comment client-side —
+ * keeps author/date/body formatting, auto-linking and the comment styles
+ * identical, and keeps moderation authoritative: a comment held for review is
+ * deliberately not shown.
+ *
+ * The list element itself is never replaced, so the delegated reaction
+ * listeners bound at load stay attached.
+ */
+---
+
+<script>
+	const COMMENT_SUBMIT_PATH = /\/_emdash\/api\/comments\/[^/]+\/[^/]+\/?$/;
+
+	function createListFrom(fresh: HTMLElement, section: HTMLElement): HTMLElement | null {
+		const freshList = fresh.querySelector<HTMLElement>(".ec-comments-list");
+		if (!freshList) return null;
+		// cloneNode(false) keeps the class names (and Astro scoping attributes)
+		// so the live list is styled like the server-rendered one.
+		const list = freshList.cloneNode(false) as HTMLElement;
+		const heading = section.querySelector(".ec-comments-heading");
+		heading?.insertAdjacentElement("afterend", list);
+		if (!list.isConnected) section.append(list);
+		return list;
+	}
+
+	async function refreshCommentList(commentId: string): Promise<void> {
+		const section = document.querySelector<HTMLElement>("[data-ec-comments]");
+		if (!section) return;
+		if (section.querySelector(`[id="comment-${commentId}"]`)) return;
+
+		const response = await fetch(window.location.href, { cache: "no-store" });
+		if (!response.ok) return;
+
+		const fresh = new DOMParser()
+			.parseFromString(await response.text(), "text/html")
+			.querySelector<HTMLElement>("[data-ec-comments]");
+		if (!fresh) return;
+
+		const freshHeading = fresh.querySelector(".ec-comments-heading");
+		const heading = section.querySelector(".ec-comments-heading");
+		if (heading && freshHeading) heading.textContent = freshHeading.textContent;
+
+		const freshComment = fresh.querySelector<HTMLElement>(`[id="comment-${commentId}"]`);
+		const freshItem = freshComment?.closest("li");
+		if (!freshItem) return;
+
+		// A reply sits inside its parent's <ol class="ec-comment-replies">; its
+		// top-level <li> in the fresh document contains the whole thread, so only
+		// the reply's own <li> may be transplanted.
+		const parentId = freshItem.parentElement
+			?.closest(".ec-comment-replies")
+			?.closest("li")
+			?.querySelector<HTMLElement>("[data-comment-id]")
+			?.getAttribute("data-comment-id");
+
+		let target: HTMLElement | null;
+		if (parentId) {
+			target = section.querySelector<HTMLElement>(
+				`[data-comment-id="${parentId}"] .ec-comment-replies`,
+			);
+		} else {
+			target = section.querySelector<HTMLElement>(".ec-comments-list") ?? createListFrom(fresh, section);
+		}
+		if (!target) return;
+
+		const item = freshItem.cloneNode(true) as HTMLElement;
+		item.classList.add("ec-comment-item--new");
+		target.append(item);
+	}
+
+	// Observe the form's POST without touching it: the response is cloned, so the
+	// form's own handler still reads it. Any failure here is swallowed — a broken
+	// observer must never turn a successful submission into an error.
+	const originalFetch = window.fetch;
+	window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+		const response = await originalFetch.call(window, input, init);
+		try {
+			const request = input instanceof Request ? input : null;
+			const url = new URL(request ? request.url : String(input), window.location.href);
+			const method = (init?.method ?? request?.method ?? "GET").toUpperCase();
+			if (method === "POST" && COMMENT_SUBMIT_PATH.test(url.pathname)) {
+				const payload = await response.clone().json();
+				const commentId = payload?.data?.id;
+				if (response.ok && payload?.data?.status === "approved" && typeof commentId === "string") {
+					await refreshCommentList(commentId);
+				}
+			}
+		} catch {
+			// pending/held comments, transport errors, unparseable bodies: nothing to do
+		}
+		return response;
+	};
+</script>
