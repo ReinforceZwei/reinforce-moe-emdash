@@ -297,7 +297,101 @@ exclude the comment list or moderation will appear to lag.
 - Post cards show **only** the featured image; posts without one render no image (the body's first inline image is deliberately not used). List queries do not expand media, so `src/lib/content/media.ts` accepts an expanded value, an id-only reference with `meta.storageKey`, the internal media route, or a bare URL string — a resolver that handles only one shape silently drops the image.
 - Admin auth is passkey-only, and WebAuthn requires a secure context — reach the admin over `localhost` (SSH tunnel), not a plain-HTTP LAN or tailnet address.
 - Images are optimised through Astro's `/_image` endpoint (`srcset` + WebP), which needs two things: `s3({ publicUrl })` so the media host is authorised at build time, and `width`/`height` on each Portable Text image block — emdash's `<Image>` silently degrades to a plain `<img>` without them. Blocks written by the admin editor carry the dimensions; imported content does not, so run `npm run backfill:image-dimensions -- /app/data/emdash.db` once after importing.
-- Back up `data/` (the database plus `-wal`/`-shm`) and the bucket separately; media bytes do not live in the database.
+- Backups are taken online by a sidecar container from the same image (see [Backups](#backups)); the R2 bucket is not covered by it.
+
+## Backups
+
+SQLite is backed up **online** — the site keeps serving writes — by a second container built from
+the same image and started with `backup/run.sh` instead of the Astro server (`backup` in
+`docker-compose.yml`). `sqlite3` is installed in the runtime stage of the Dockerfile for it, and the
+script ships as `/app/backup/run.sh`; nothing else in the image changes.
+
+`.backup` uses SQLite's online backup API, which reads a consistent snapshot without locking the
+writers out. Two details are load-bearing:
+
+- The source is opened as `file:…?mode=ro`. Plain `sqlite3` **creates** a missing database, so a
+  mistyped path produces an empty "backup" that still passes `PRAGMA integrity_check` — the run
+  verifies a table count before publishing for exactly that reason.
+- The database directory is mounted read-write anyway: a WAL reader needs the `-shm` file beside the
+  database, and a read-only mount fails with `unable to open database file`.
+
+Each run writes `emdash-<UTC timestamp>.db` plus a `.sha256`, checks the copy (table count, then
+`integrity_check`), and only then renames it out of `.<name>.partial` — a collector globbing `*.db`
+never sees a half-written file. `LAST_SUCCESS` holds the epoch of the last good run.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_PATH` | `/app/data/emdash.db` | database to copy |
+| `OUT_DIR` | `/app/backups` | where backups land — the volume the collector reads |
+| `INTERVAL` | `21600` | seconds between backups |
+| `KEEP` | `7` | backups kept before the oldest is pruned (the compose service sets `28`) |
+| `MIN_TABLES` | `80` | floor for the sanity check; an empty database has 0 |
+
+The schedule is a `sleep` loop that also backs up once at startup when `LAST_SUCCESS` is older than
+`INTERVAL`. That catch-up is the point: every deploy and image update recreates this container, so a
+bare `sleep 21600` loop combined with frequent deploys could never fire. No cron, so there is no
+crontab ownership trap and job output goes straight to `docker compose logs backup`. `TERM` is
+trapped, which makes `docker stop` immediate.
+
+Pruning lives in this container, so `KEEP` must stay well above the collector's worst-case lag —
+`28 × 6 h` is seven days of files on the volume.
+
+In production the service only needs the published tag — no `env_file` (the encryption key and R2
+credentials have no business here), no `proxy` network, no Traefik labels:
+
+```yaml
+  backup:
+    image: ghcr.io/reinforcezwei/reinforce-moe-emdash:X.Y.Z
+    restart: always
+    mem_limit: 128m
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      TZ: UTC
+      KEEP: "28"
+      INTERVAL: "21600"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+    command: ["/bin/sh", "/app/backup/run.sh"]
+```
+
+### Verifying a backup
+
+```bash
+sqlite3 emdash-20261027T075110Z.db "PRAGMA integrity_check"        # ok
+sqlite3 emdash-20261027T075110Z.db "select count(*) from ec_posts" # non-zero on a used site
+sha256sum -c emdash-20261027T075110Z.db.sha256
+```
+
+Neither of those proves recovery. The rehearsal is: start the app image with the backup in place of
+`data/emdash.db`, then confirm the site renders, the admin signs in (users **and** passkeys live in
+the database), an edit saves, and a media URL resolves.
+
+### Restore
+
+1. `docker compose stop app` — and stop the collector, so it does not pick up the file you are
+   restoring.
+2. Move the damaged database aside rather than deleting it: `data/emdash.db`, `data/emdash.db-wal`,
+   `data/emdash.db-shm`.
+3. `cp emdash-<timestamp>.db data/emdash.db && rm -f data/emdash.db-wal data/emdash.db-shm`. Dropping
+   the stale `-wal`/`-shm` is not optional: a leftover WAL beside a replaced database is how a
+   restored site comes back looking corrupt.
+4. `docker compose start app`, then verify pages, admin sign-in and one image.
+5. Confirm `EMDASH_ENCRYPTION_KEY` is the one the backup was taken with, then open Settings → Email
+   and check the stored plugin secret still decrypts.
+
+### What this does not cover
+
+- **`EMDASH_ENCRYPTION_KEY` and its rotation list** — not in the database, not recoverable from it.
+  A restored database plus a different key leaves the plugin secrets unreadable. Keep `.env` in a
+  secret manager.
+- **Media bytes** — they live in R2, so database rows alone restore a site with broken images. Rely
+  on bucket versioning or a separate `aws s3 sync` with read-only credentials.
+- **Off-host copies** — `./backups` is on the same host as the database. Whatever reads that volume
+  must write somewhere else, or losing the host loses the backups with it.
+- EmDash's own JSON backups (Settings → Backups) are for inspection only: EmDash cannot restore them.
 
 ## Releasing
 
@@ -321,5 +415,4 @@ the release needs a content or data action (DB/storage adapter change, route or 
 
 Production pins the full `X.Y.Z` tag (or its digest); `latest` is only ever published from a tag.
 Migrations run forward on the first request after deploy, so back up `data/` before swapping the
-container — after an image has migrated, rolling back means restoring the database.
-
+container ([Backups](#backups)) — after an image has migrated, rolling back means restoring the database.

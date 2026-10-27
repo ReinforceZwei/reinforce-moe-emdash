@@ -10,6 +10,8 @@ data.db-*
 data/
 # Staged import media + manifests
 import/
+# SQLite backups written by the `backup` service
+backups/
 
 # Environment
 .env
