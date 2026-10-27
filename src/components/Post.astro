@@ -2,6 +2,7 @@
 import Prose from "./prose/Prose.astro";
 import { Comments, CommentForm } from "emdash/ui/comments";
 import Container from "./Container.astro";
+import CommentLiveUpdate from "./CommentLiveUpdate.astro";
 import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
 import type { PostEntry } from "../lib/content/types";
 import { formatPostDate, postDate } from "../lib/format";
@@ -88,6 +89,7 @@ const turnstileSiteKey = process.env.PUBLIC_TURNSTILE_SITE_KEY;
       labels={commentFormLabels}
       turnstileSiteKey={turnstileSiteKey}
     />
+    <CommentLiveUpdate />
   </div>
 </Container>
 
