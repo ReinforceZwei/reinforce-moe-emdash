@@ -14,7 +14,9 @@ all content now comes from EmDash collections instead of the Trilium content loa
 | Media | S3-compatible object storage (Cloudflare R2, public via `media.reinforce.moe`) |
 | Container | Docker + Compose |
 
-EmDash adapters are chosen in `astro.config.mjs`; the S3 adapter reads `S3_*` variables at boot, so the image can be built once and configured per environment.
+EmDash adapters are chosen in `astro.config.mjs`; the S3 adapter reads the credential `S3_*` variables at
+boot, so the image can be built once and configured per environment. `S3_PUBLIC_URL` is the exception —
+the config passes it explicitly, so it is build-time (see Build-time vs runtime environment).
 
 ## Layout
 
@@ -141,6 +143,36 @@ Required environment:
 The first request runs EmDash migrations and applies the seed's content model. Open `/_emdash/admin` to complete setup
 (passkey registration) and create the first admin.
 
+### Build-time vs runtime environment
+
+`astro.config.mjs` is evaluated **once, during `astro build`** — the deployed server never runs it, so
+anything the config computes and hands to `emdash()` is frozen as a literal in `dist`. Setting that
+variable in compose or `.env` then has no effect, which is invisible as long as the runtime value equals
+the baked default:
+
+| Variable | Read where | Changing it needs |
+| --- | --- | --- |
+| `EMDASH_DB_PATH` (default `/app/data/emdash.db`) | `astro.config.mjs` → `sqlite({ url })` | **a rebuild** |
+| `EMDASH_SESSION_PATH` (default `<database dir>/sessions`) | `astro.config.mjs` → session driver `base` | **a rebuild** |
+| `S3_PUBLIC_URL` (default `https://media.reinforce.moe`) | `astro.config.mjs` → `s3({ publicUrl })`, which also feeds `image.remotePatterns` | **a rebuild** |
+| `EMDASH_SITE_URL`, `EMDASH_ENCRYPTION_KEY`, `EMDASH_PREVIEW_SECRET` | EmDash, at request time | a restart |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION` | the s3 adapter, at boot | a restart |
+| `PUBLIC_TURNSTILE_SITE_KEY`, `EMDASH_TURNSTILE_SECRET_KEY` | request time (see Comments) | a restart |
+
+`S3_PUBLIC_URL` is the odd one out among `S3_*`: `resolveS3Config` prefers an explicit value and only
+falls back to `process.env` for fields it was not given. The config always supplies `publicUrl` (the env
+value or the production default), so the runtime variable is ignored, while bucket, keys, endpoint and
+region have no explicit value and are read from the environment at boot.
+
+Consequences: `env_file:` in compose cannot move the database or the media host on an image that is
+already built, and the CI build (`.github/workflows/image.yml`) runs with no `S3_*`/`EMDASH_*` variables
+at all — so the values baked into a released image are exactly the defaults above. This applies to the
+built server only: `astro dev` re-evaluates the config on every start, so every variable behaves like a
+runtime one in development.
+
+To check whether a value reached the bundle, build with a unique value for it and search `dist/`; to
+check the runtime side, change the variable and watch which path or host the server actually uses.
+
 ## Email
 
 Magic links, invites and account recovery need a provider plugin for EmDash's `email:deliver` hook.
@@ -248,8 +280,13 @@ Admin → Comments. Configure per collection: moderation mode, auto-approve sign
 
 | Variable | Purpose |
 | --- | --- |
-| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (build-time, public) |
+| `PUBLIC_TURNSTILE_SITE_KEY` | renders the Turnstile widget in the form (public; read at request time) |
 | `EMDASH_TURNSTILE_SECRET_KEY` | server-side verification; the token is ignored without it |
+
+Both are read from `process.env` **per request**, so they can be set in compose's `env_file` and take
+effect after a restart. Do not switch the site key back to `import.meta.env.PUBLIC_…`: Vite inlines
+that at build time, which leaves the CI-built image without a widget — and with the secret set,
+verification fails closed and every comment is rejected.
 
 Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
 exclude the comment list or moderation will appear to lag.
