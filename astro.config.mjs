@@ -49,11 +49,39 @@ try {
 }
 
 // Media stays on S3 (Cloudflare R2), configured through S3_* environment vars.
+//
+// Reverse proxy (Traefik terminates TLS, forwards Host / X-Forwarded-Host / X-Forwarded-Proto).
+// Astro only *reflects* those forwarded headers for hosts listed in `security.allowedDomains`, so
+// that list is what makes `Astro.url` report the public origin instead of the internal
+// `http://localhost:4321`; without it every canonical, `og:url` and absolute link built from the
+// request advertises a host nobody can reach (this reached production once, as `localhost`
+// canonicals while Traefik was forwarding the correct headers).
+//
+// The list is evaluated at build time and cannot come from a runtime variable, so the public host
+// is a literal here — a rebuild is what a domain move needs. `siteUrl` itself is deliberately *not*
+// set in this config: EmDash reads EMDASH_SITE_URL (then SITE_URL) at request time.
+const PUBLIC_HOST = "reinforce.moe";
+const allowedDomains = [
+	{ hostname: PUBLIC_HOST, protocol: "https" },
+	// Plain-HTTP requests are allowed too (probe/health checks, a proxy hop that keeps http on the
+	// inside); a host that is not listed is not rejected, its forwarded headers are just ignored.
+	{ hostname: PUBLIC_HOST, protocol: "http" },
+];
+
 export default defineConfig({
 	output: "server",
 	adapter: node({
 		mode: "standalone",
 	}),
+	security: {
+		allowedDomains,
+	},
+	vite: {
+		server: {
+			// The dev-server counterpart of the same check, so `astro dev` accepts a proxied Host.
+			allowedHosts: [PUBLIC_HOST, "localhost"],
+		},
+	},
 	// Astro only configures a driver when none is set, so this replaces the adapter's
 	// image-layer default (see sessionPath above) rather than conflicting with it.
 	session: {
@@ -67,6 +95,12 @@ export default defineConfig({
 		react(),
 		emdash({
 			database: sqlite({ url: `file:${databasePath}` }),
+			// `siteUrl` is deliberately not set here: EmDash falls back to EMDASH_SITE_URL (then
+			// SITE_URL) at runtime, so the image stays portable across environments.
+			// Traefik writes X-Forwarded-For; trusting it lets the auth and comment rate limits count
+			// per real client IP instead of lumping every visitor into one bucket. Safe here because
+			// the app is only reachable through the proxy.
+			trustedProxyHeaders: ["x-forwarded-for"],
 			// The media base must be known at build time — EmDash bakes image.remotePatterns from
 			// it and Astro refuses every host it does not authorise, falling back to a plain,
 			// unoptimised <img>. It also has to match the bucket S3_* uploads into, or media the
