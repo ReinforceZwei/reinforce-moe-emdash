@@ -173,6 +173,27 @@ runtime one in development.
 To check whether a value reached the bundle, build with a unique value for it and search `dist/`; to
 check the runtime side, change the variable and watch which path or host the server actually uses.
 
+### Reverse proxy
+
+The site runs behind Traefik, which terminates TLS and forwards `Host`, `X-Forwarded-Host` and
+`X-Forwarded-Proto`. Traefik doing that is not enough: Astro only *reflects* forwarded headers for hosts
+listed in `security.allowedDomains`. Without the list `Astro.url` stays the internal
+`http://localhost:4321`, and every canonical, `og:url` and absolute link built from the request
+advertises a host nobody can reach — that is how production shipped `localhost` canonicals.
+
+`astro.config.mjs` therefore hardcodes the public host in `security.allowedDomains` (a literal: the list
+is evaluated at build time, so it cannot come from a runtime variable). **Moving to a new domain means
+editing that constant and rebuilding**, not just changing `EMDASH_SITE_URL`.
+
+`siteUrl` is not set in the config: EmDash reads `EMDASH_SITE_URL` (then `SITE_URL`) at request time,
+which is what passkeys, CSRF checks, email links and sitemaps use.
+
+Requests whose Host is not allow-listed are not rejected — Astro ignores their forwarded headers, so a
+spoofed Host cannot inject a canonical.
+
+`trustedProxyHeaders: ["x-forwarded-for"]` is a separate concern: it lets the auth and comment rate
+limits count per real client IP instead of putting every visitor in one bucket.
+
 ## Email
 
 Magic links, invites and account recovery need a provider plugin for EmDash's `email:deliver` hook.
