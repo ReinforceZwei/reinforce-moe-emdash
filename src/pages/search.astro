@@ -13,10 +13,10 @@ const results = q
 	? await search(q, { collections: ["posts", "pages"], limit: 20, cursor })
 	: { items: [], nextCursor: undefined };
 
-/** Entries link by collection: posts live under /posts, pages at the root. */
+/** Entries link by collection: posts live under /blog, pages at the root. */
 function hrefFor(result: { collection: string; slug: string | null }): string {
 	const slug = result.slug ?? "";
-	return result.collection === "posts" ? `/posts/${slug}` : `/${slug}`;
+	return result.collection === "posts" ? `/blog/${slug}` : `/${slug}`;
 }
 
 const meta = buildPageMeta(q ? `搜尋：${q}` : "搜尋");

@@ -20,16 +20,16 @@ const { category, tags } = terms;
 
 <article class="post-preview">
   <h2>
-    <a href={`/posts/${post.id}`}>{post.data.title}</a>
+    <a href={`/blog/${post.id}`}>{post.data.title}</a>
   </h2>
   {image && (
-    <a href={`/posts/${post.id}`} class="post-preview-image">
+    <a href={`/blog/${post.id}`} class="post-preview-image">
       <Image image={image} alt={image.alt ?? post.data.title} />
     </a>
   )}
   {excerpt && <p>{excerpt}</p>}
   <div>
-    <a href={`/posts/${post.id}`} class="read-more">閲讀全文</a>
+    <a href={`/blog/${post.id}`} class="read-more">閲讀全文</a>
   </div>
   <div class="info-section">
     <div>{published}</div>

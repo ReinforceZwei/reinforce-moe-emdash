@@ -9,7 +9,7 @@ const FALLBACK_POSTS_PER_PAGE = 10;
 /**
  * Page size for post lists, from Admin → Settings (`postsPerPage`).
  *
- * Lists used to hardcode 10 (home) and 20 (/posts) independently, so the
+ * Lists used to hardcode 10 (home) and 20 (/blog) independently, so the
  * setting existed but did nothing.
  */
 export async function getPostsPerPage(): Promise<number> {
