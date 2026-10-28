@@ -19,7 +19,7 @@ const [categoryTerms, tagTerms] = await Promise.all([
 ]);
 const terms = splitTerms(categoryTerms, tagTerms);
 
-const meta = buildEntryMeta(post, { collection: "posts", slug, url: Astro.url });
+const meta = await buildEntryMeta(post, { collection: "posts", slug, url: Astro.url });
 ---
 
 <Base meta={meta}>

@@ -8,9 +8,32 @@
  * turns it into the EmDash page context.
  */
 
-import { getSeoMeta } from "emdash";
+import { getSeoMeta, getSiteSettings } from "emdash";
 
 import type { PageEntry, PostEntry } from "./content/types";
+
+const ABSOLUTE_URL_RE = /^https?:\/\//i;
+
+/**
+ * Public origin for absolute URLs (`<link rel="canonical">`, `og:url`).
+ *
+ * The request origin is only correct when the app is the public endpoint. Behind a proxy that
+ * rewrites `Host` — nginx's default with `proxy_pass http://localhost:4321` sends
+ * `Host: localhost:4321` — `Astro.url.origin` is the *internal* address, and every canonical on the
+ * live site came out as `http://localhost:4321/...`, which points search engines at a host they
+ * cannot reach.
+ *
+ * Admin → Settings → Site URL is the authoritative public origin (EmDash's own sitemaps already
+ * use it), so prefer it and fall back to the request origin only when it is unset or not absolute —
+ * which is what local development looks like.
+ */
+export async function getSiteOrigin(fallback: string): Promise<string> {
+	const settings = (await getSiteSettings()) as { url?: string | null } | null;
+	const configured = typeof settings?.url === "string" ? settings.url.trim() : "";
+	const origin = ABSOLUTE_URL_RE.test(configured) ? configured : fallback;
+
+	return origin.replace(/\/+$/, "");
+}
 
 /**
  * Fallback site name for `<title>` suffixes and OG tags.
@@ -41,14 +64,18 @@ export interface EntryMetaOptions {
   description?: string | null;
 }
 
-/** Metadata for a page backed by a single content entry. */
-export function buildEntryMeta(
+/**
+ * Metadata for a page backed by a single content entry.
+ *
+ * Async because the public origin comes from site settings (see `getSiteOrigin`).
+ */
+export async function buildEntryMeta(
   entry: PostEntry | PageEntry,
   { collection, slug, url, pageTitle, description }: EntryMetaOptions,
-): PageMeta {
+): Promise<PageMeta> {
   const seo = getSeoMeta(entry as Parameters<typeof getSeoMeta>[0], {
     siteTitle: SITE_NAME,
-    siteUrl: url.origin,
+    siteUrl: await getSiteOrigin(url.origin),
     path: url.pathname.replace(/\/$/, ""),
   });
 

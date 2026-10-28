@@ -11,7 +11,7 @@ const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
 if (!page) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-const meta = buildEntryMeta(page, { collection: "pages", slug, url: Astro.url });
+const meta = await buildEntryMeta(page, { collection: "pages", slug, url: Astro.url });
 ---
 
 <Base meta={meta}>
