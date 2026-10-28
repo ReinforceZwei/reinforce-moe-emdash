@@ -51,7 +51,7 @@
 				"search",
 				"seo"
 			],
-			"urlPattern": "/posts/{slug}",
+			"urlPattern": "/blog/{slug}",
 			"commentsEnabled": true,
 			"fields": [
 				{

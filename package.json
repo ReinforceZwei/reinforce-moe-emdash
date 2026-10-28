@@ -15,7 +15,8 @@
     "typecheck": "astro check",
     "backfill:decode-slugs": "node scripts/backfill-decode-slugs.mjs",
     "backfill:image-dimensions": "node scripts/backfill-image-dimensions.mjs",
-    "backfill:publish-dates": "node scripts/backfill-publish-dates.mjs"
+    "backfill:publish-dates": "node scripts/backfill-publish-dates.mjs",
+    "set:post-url-prefix": "node scripts/set-post-url-prefix.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.5",

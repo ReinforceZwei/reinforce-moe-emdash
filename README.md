@@ -23,15 +23,15 @@ the config passes it explicitly, so it is build-time (see Build-time vs runtime 
 ```
 src/
 ├── layouts/Base.astro          # page shell: EmDash head/body, header, footer, global CSS
-├── layouts/Archive.astro       # title + post list + pagination (/posts, category, tag)
+├── layouts/Archive.astro       # title + post list + pagination (/blog, category, tag)
 ├── components/                 # Header, Footer, PostPreview, Post, Page, PostList, Pagination,
 │                               # WidgetSlot, CategoryList, TagList, MyProfile (fallbacks)
 ├── pages/
 │   ├── index.astro             # home: widget slots around the post list
 │   ├── search.astro            # results page for the search widget
 │   ├── [slug].astro            # static pages
-│   ├── posts/[slug].astro      # post detail (Portable Text + comments)
-│   ├── posts/index.astro       # all posts
+│   ├── blog/[slug].astro       # post detail (Portable Text + comments)
+│   ├── blog/index.astro        # all posts
 │   ├── category/[slug].astro   # category archive
 │   └── tag/[slug].astro        # tag archive
 ├── styles/
