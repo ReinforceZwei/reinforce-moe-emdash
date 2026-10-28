@@ -141,5 +141,38 @@ if (noRedirects) {
 	}
 }
 
+// Core widgets carry their own link template. `core:recent-posts` falls back to
+// `/posts/${post.id}` unless its `urlTemplate` prop is set, so without this the sidebar keeps
+// linking the old prefix (a redirect hop) even after the routes and url_pattern have moved.
+const widgets = db
+	.prepare("SELECT id, title, component_props FROM _emdash_widgets WHERE component_id = ?")
+	.all("core:recent-posts");
+
+if (widgets.length === 0) {
+	console.log("widgets: no core:recent-posts instances");
+} else {
+	const update = db.prepare("UPDATE _emdash_widgets SET component_props = ? WHERE id = ?");
+	for (const row of widgets) {
+		let props;
+		try {
+			props = row.component_props ? JSON.parse(row.component_props) : {};
+		} catch {
+			console.log(`widget: ${row.title ?? row.id} - unreadable component_props, skipped`);
+			continue;
+		}
+		const wanted = `${toPrefix}/:slug`;
+		if (props.urlTemplate === wanted) {
+			console.log(`widget: ${row.title ?? row.id} already uses ${wanted}`);
+			continue;
+		}
+		if (dryRun) {
+			console.log(`widget: ${row.title ?? row.id} would use ${wanted}`);
+			continue;
+		}
+		update.run(JSON.stringify({ ...props, urlTemplate: wanted }), row.id);
+		console.log(`widget: ${row.title ?? row.id} -> ${wanted}`);
+	}
+}
+
 db.close();
 console.log(dryRun ? "dry run: nothing written" : "done");
