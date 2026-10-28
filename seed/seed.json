@@ -332,7 +332,8 @@
 					"title": "Recent Posts",
 					"componentId": "core:recent-posts",
 					"props": {
-						"count": 5
+						"count": 5,
+						"urlTemplate": "/blog/:slug"
 					}
 				}
 			]
@@ -411,7 +412,8 @@
 					"componentId": "core:recent-posts",
 					"props": {
 						"count": 5,
-						"showDate": true
+						"showDate": true,
+						"urlTemplate": "/blog/:slug"
 					}
 				}
 			]
