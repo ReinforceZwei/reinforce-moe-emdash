@@ -3,7 +3,7 @@ import path from "node:path";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
 import { defineConfig, sessionDrivers } from "astro/config";
-import emdash, { s3 } from "emdash/astro";
+import emdash, { s3, local } from "emdash/astro";
 import { emdashSmtp } from "emdash-smtp";
 import { sqlite } from "emdash/db";
 import { loadEnv } from "vite";
@@ -106,7 +106,9 @@ export default defineConfig({
 			// unoptimised <img>. It also has to match the bucket S3_* uploads into, or media the
 			// site stores is served from a host that does not have it (404). Hence: env first
 			// (`.env` is loaded above), production domain as the default.
-			storage: s3({ publicUrl: process.env.S3_PUBLIC_URL || "https://media.reinforce.moe" }),
+			storage: import.meta.env.PROD
+			  ? s3({ publicUrl: process.env.S3_PUBLIC_URL || "https://media.reinforce.moe" })
+				: local({ directory: "./uploads", baseUrl: "/_emdash/api/media/file" }),
 			// Email delivery (magic links, invites, account recovery). The provider
 			// credentials are plugin settings stored in the database — enter the API key on
 			// the plugin's admin page — and exactly one provider delivers at a time, so pick
