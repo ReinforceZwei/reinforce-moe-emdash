@@ -55,24 +55,13 @@ const meta = buildPageMeta("");
 
 <style>
 .column-container {
-	display: flex;
-	flex-wrap: nowrap;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
 	gap: var(--space-6);
 }
-.side-column {
-	flex-basis: 25%;
-}
-.content-column {
-	flex-basis: 50%;
-}
-/* Declared after the base widths so it wins without !important. */
 @media (max-width: 781px) {
 	.column-container {
-		flex-wrap: wrap;
-	}
-	.side-column,
-	.content-column {
-		flex-basis: 100%;
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
 .main-content {
