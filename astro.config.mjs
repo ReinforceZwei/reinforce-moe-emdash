@@ -101,6 +101,11 @@ export default defineConfig({
 			// per real client IP instead of lumping every visitor into one bucket. Safe here because
 			// the app is only reachable through the proxy.
 			trustedProxyHeaders: ["x-forwarded-for"],
+			// Redirects the redirect table cannot express. Its destinations must be site-relative,
+			// so a move to another host (/anone -> GitHub Pages) is served by this outer
+			// middleware instead; it runs before EmDash's own middleware and before the database
+			// is opened, and is evaluated at build time, so changing it means a rebuild.
+			middleware: { outer: "./src/site-redirects.ts" },
 			// The media base must be known at build time — EmDash bakes image.remotePatterns from
 			// it and Astro refuses every host it does not authorise, falling back to a plain,
 			// unoptimised <img>. It also has to match the bucket S3_* uploads into, or media the
