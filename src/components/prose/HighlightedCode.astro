@@ -1,0 +1,69 @@
+---
+import { Code } from "astro:components";
+import type { ComponentProps } from "astro/types";
+
+interface Props {
+  node: {
+    code: string;
+    language?: string;
+    filename?: string;
+  };
+}
+
+const { node } = Astro.props;
+const language = (node.language || "plaintext") as NonNullable<
+  ComponentProps<typeof Code>["lang"]
+>;
+const title = node.filename || node.language?.toUpperCase() || "Code";
+
+if (!node.code) {
+  return null;
+}
+---
+
+<div class="emdash-code">
+  <div class="emdash-code-header">
+    <div class="emdash-code-controls" aria-hidden="true">
+      <span class="emdash-code-control emdash-code-control-close"></span>
+      <span class="emdash-code-control emdash-code-control-minimize"></span>
+      <span class="emdash-code-control emdash-code-control-maximize"></span>
+    </div>
+    <span class="emdash-code-title" title={title}>{title}</span>
+    <button class="emdash-code-copy" type="button" data-copy-code aria-label="Copy code">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M5.5 4.5h7v9h-7z" />
+        <path d="M3.5 11.5h-1v-9h7v1" />
+      </svg>
+      <span data-copy-label aria-live="polite">Copy</span>
+    </button>
+  </div>
+  <Code code={node.code} lang={language} />
+</div>
+
+<script>
+  document.addEventListener("click", async (event) => {
+    if (!(event.target instanceof Element)) return;
+
+    const button = event.target.closest<HTMLButtonElement>("[data-copy-code]");
+    if (!button) return;
+
+    const label = button.querySelector<HTMLElement>("[data-copy-label]");
+    const code = button.closest(".emdash-code")?.querySelector<HTMLElement>("pre code");
+    if (!label || !code) {
+      console.error("Could not copy code block: expected code or copy label is missing.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(code.innerText);
+      label.textContent = "Copied!";
+    } catch (error) {
+      console.error("Could not copy code block to the clipboard.", error);
+      label.textContent = "Copy failed";
+    }
+
+    window.setTimeout(() => {
+      label.textContent = "Copy";
+    }, 2000);
+  });
+</script>

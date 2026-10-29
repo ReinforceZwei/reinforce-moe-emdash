@@ -40,6 +40,121 @@
   text-align: center;
 }
 
+.post-content .emdash-code {
+  margin-block: var(--space-5);
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-code-window-border);
+  border-radius: var(--radius-md);
+  background: var(--color-code-window);
+  box-shadow: var(--shadow-subtle);
+}
+
+.post-content .emdash-code-header {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 2fr) 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: var(--border-width) solid var(--color-code-window-border);
+  background: var(--color-code-window-header);
+  color: var(--color-code-window-text);
+}
+
+.post-content .emdash-code-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.post-content .emdash-code-control {
+  width: 0.72rem;
+  height: 0.72rem;
+  border: var(--border-width) solid rgb(0 0 0 / 0.12);
+  border-radius: var(--radius-pill);
+}
+
+.post-content .emdash-code-control-close {
+  background: var(--color-code-control-close);
+}
+
+.post-content .emdash-code-control-minimize {
+  background: var(--color-code-control-minimize);
+}
+
+.post-content .emdash-code-control-maximize {
+  background: var(--color-code-control-maximize);
+}
+
+.post-content .emdash-code-title {
+  overflow: hidden;
+  color: var(--color-code-window-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-content .emdash-code-copy {
+  display: inline-flex;
+  justify-self: end;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.3rem 0.55rem;
+  border: var(--border-width) solid var(--color-code-window-button-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-code-window-button);
+  color: var(--color-code-window-text);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.post-content .emdash-code-copy:hover {
+  border-color: var(--color-code-window-button-hover-border);
+  background: var(--color-code-window-button-hover);
+}
+
+.post-content .emdash-code-copy:focus-visible {
+  outline: 2px solid var(--color-code-window-focus);
+  outline-offset: 2px;
+}
+
+.post-content .emdash-code-copy svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+}
+
+.post-content .emdash-code pre.astro-code {
+  margin: 0;
+  padding: 1rem 1.15rem;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+@media (max-width: 382px) {
+  .post-content .emdash-code-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding-inline: 0.5rem;
+  }
+
+  .post-content .emdash-code-copy {
+    padding-inline: 0.4rem;
+  }
+}
+
 /* Quotations (ported from the Trilium stylesheet). */
 .post-content blockquote {
   position: relative;

@@ -40,6 +40,18 @@
   --color-input-text: #49002d;
   --color-border-input: var(--color-surface);
   --color-border-input-focus: var(--color-surface-strong);
+  --color-code-window: #24292e;
+  --color-code-window-header: #1f2329;
+  --color-code-window-border: rgb(0 0 0 / 0.24);
+  --color-code-window-text: #c9d1d9;
+  --color-code-window-button: rgb(255 255 255 / 0.06);
+  --color-code-window-button-hover: rgb(255 255 255 / 0.12);
+  --color-code-window-button-border: rgb(255 255 255 / 0.12);
+  --color-code-window-button-hover-border: rgb(255 255 255 / 0.24);
+  --color-code-window-focus: #79b8ff;
+  --color-code-control-close: #ff5f57;
+  --color-code-control-minimize: #febc2e;
+  --color-code-control-maximize: #28c840;
 
   /* Keyboard keys */
   --color-kbd-border: #dad1d9;

@@ -13,6 +13,7 @@
 import { PortableText } from "emdash/ui";
 import type { PortableTextProps } from "astro-portabletext/types";
 import Heading2 from "./Heading2.astro";
+import HighlightedCode from "./HighlightedCode.astro";
 
 interface Props {
   value?: unknown;
@@ -21,4 +22,10 @@ interface Props {
 const blocks = (Astro.props.value ?? []) as PortableTextProps["value"];
 ---
 
-<PortableText value={blocks} components={{ block: { h1: Heading2 } }} />
+<PortableText
+  value={blocks}
+  components={{
+    block: { h1: Heading2 },
+    type: { code: HighlightedCode },
+  }}
+/>
