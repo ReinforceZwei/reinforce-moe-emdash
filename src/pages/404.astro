@@ -1,15 +1,113 @@
 ---
+import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
 import Container from "../components/Container.astro";
 import { buildPageMeta } from "../lib/seo";
+import rem from "../assets/rem-404.png";
 
+// The copy is carried over verbatim from the old PHP site's 404.html.
 const meta = buildPageMeta("Not Found");
 ---
 
 <Base meta={meta}>
 	<Container>
-		<h1>Page not found</h1>
-		<p>The page you're looking for doesn't exist.</p>
-		<a href="/">Go home</a>
+		<div class="not-found">
+			<div class="not-found__text">
+				<h1 class="not-found__title">
+					<span class="not-found__code" aria-hidden="true">404</span>
+					<span class="visually-hidden">Page not found</span>
+				</h1>
+				<p class="not-found__lead">Rem is sleeply</p>
+				<p class="not-found__body">She could not found the page you are looking for</p>
+				<p class="not-found__links">
+					<a class="button" href="/">Go home</a>
+					<a href="/blog">Blog</a>
+					<a href="/search">Search</a>
+				</p>
+			</div>
+
+			<Image
+				class="not-found__art"
+				src={rem}
+				alt="睡著了的雷姆"
+				layout="none"
+				widths={[320, 480, 725]}
+				sizes="(max-width: 781px) min(16rem, 60vw), 20rem"
+				loading="eager"
+			/>
+		</div>
 	</Container>
 </Base>
+
+<style>
+.not-found {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+	align-items: center;
+	gap: var(--space-6);
+	padding-block: var(--space-4) var(--space-6);
+}
+
+.not-found__title {
+	margin: 0;
+}
+
+/* The 404 keeps the old page's offset shadow, re-tinted with the site palette. */
+.not-found__code {
+	display: block;
+	font-size: clamp(4rem, 16vw, 9rem);
+	line-height: var(--line-height-tight);
+	letter-spacing: -0.02em;
+	text-shadow: 0.05em 0.05em var(--color-quote-mark);
+}
+
+.not-found__lead {
+	margin-block: var(--space-3) 0;
+	font-size: var(--font-size-h3);
+	line-height: var(--line-height-tight);
+}
+
+.not-found__body {
+	margin-block: 0 var(--space-5);
+	font-size: 1.1rem;
+}
+
+.not-found__links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-4);
+	margin: 0;
+}
+
+.not-found__art {
+	justify-self: end;
+	width: 100%;
+	max-width: 20rem;
+	height: auto;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (max-width: 781px) {
+	.not-found {
+		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
+	}
+
+	.not-found__art {
+		justify-self: center;
+		max-width: min(16rem, 60vw);
+	}
+}
+</style>

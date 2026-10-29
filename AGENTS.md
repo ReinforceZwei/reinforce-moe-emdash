@@ -58,6 +58,7 @@ There is intentionally no `theme.css`, no custom font configuration, no styled l
 | Page        | `/[slug]`          | Static page content (e.g. `/about`)            |
 | Category    | `/category/[slug]` | Posts filtered by category                     |
 | Tag         | `/tag/[slug]`      | Posts filtered by tag                          |
+| 404         | any unmatched      | "Rem is sleeply" splash (art: `src/assets/rem-404.png`) |
 
 ## Schema
 
