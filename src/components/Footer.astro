@@ -10,10 +10,13 @@ const { siteTitle, tagline = "" } = Astro.props;
 
 <footer class="footer">
   <div class="inner">
-    <div>
+    <div class="footer-meta">
       <a href="/">{siteTitle}</a>
+      {tagline && <span>{tagline}</span>}
     </div>
-    {tagline && <div>{tagline}</div>}
+    <div>
+      <a class="admin-link" href="/_emdash/admin">登入</a>
+    </div>
   </div>
 </footer>
 
@@ -31,5 +34,17 @@ const { siteTitle, tagline = "" } = Astro.props;
   margin-right: auto;
   padding-top: var(--space-8);
   padding-bottom: var(--space-8);
+}
+.footer-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.admin-link {
+  color: inherit;
+}
+.admin-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
 }
 </style>
