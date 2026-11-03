@@ -2,7 +2,7 @@
 import { getEmDashEntry, decodeSlug } from "emdash";
 import Base from "../layouts/Base.astro";
 import Page from "../components/Page.astro";
-import { buildEntryMeta } from "../lib/seo";
+import { resolveSeo } from "../lib/seo";
 
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
@@ -11,9 +11,17 @@ const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
 if (!page) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-const meta = buildEntryMeta(page, { collection: "pages", slug, url: Astro.url });
+// A standalone page (about, contact) is not an article: keep og:type=website
+// so no BlogPosting graph is claimed for it.
+const seo = await resolveSeo({
+	url: Astro.url,
+	entry: page,
+	collection: "pages",
+	slug,
+	pageType: "website",
+});
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
 	<Page page={page} />
 </Base>

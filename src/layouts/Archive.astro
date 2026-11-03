@@ -11,10 +11,10 @@ import PostList from "../components/PostList.astro";
 import Pagination from "../components/Pagination.astro";
 import type { NormalizedTerms } from "../lib/content/terms";
 import type { PostEntry } from "../lib/content/types";
-import type { PageMeta } from "../lib/seo";
+import type { SeoContext } from "../lib/seo";
 
 interface Props {
-  meta: PageMeta;
+  seo: SeoContext;
   heading: string;
   posts: PostEntry[];
   termsByEntry?: Map<string, NormalizedTerms>;
@@ -23,10 +23,10 @@ interface Props {
   nextHref?: string | null;
 }
 
-const { meta, heading, posts, termsByEntry, emptyLabel, prevHref, nextHref } = Astro.props;
+const { seo, heading, posts, termsByEntry, emptyLabel, prevHref, nextHref } = Astro.props;
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
   <Container>
     <h1>{heading}</h1>
     <PostList posts={posts} termsByEntry={termsByEntry} emptyLabel={emptyLabel} />

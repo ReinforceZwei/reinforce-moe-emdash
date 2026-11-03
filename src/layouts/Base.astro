@@ -1,4 +1,15 @@
 ---
+/**
+ * Document shell.
+ *
+ * SEO lives in two places by design: `resolveSeo()` (src/lib/seo.ts) decides
+ * the values, and `EmDashHead` renders them. This layout only forwards the
+ * resolved context — it no longer composes titles, picks separators, or emits
+ * its own icon tag, so there is no second copy of the precedence rules.
+ *
+ * `SiteHead` adds the tags EmDash cannot emit (og:locale, theme-color, sized
+ * icons).
+ */
 import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
 import type { Menu } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
@@ -8,16 +19,16 @@ import "@fontsource-variable/noto-sans-mono";
 import "../styles/tokens.css";
 import "../styles/reset.css";
 import "../styles/base.css";
-import original from "../assets/original.png";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import { SITE_NAME, type PageMeta } from "../lib/seo";
+import SiteHead from "../components/SiteHead.astro";
+import { SITE_LOCALE, type SeoContext } from "../lib/seo";
 
 interface Props {
-	meta: PageMeta;
+	seo: SeoContext;
 }
 
-const { meta } = Astro.props;
+const { seo } = Astro.props;
 
 const [settingsResult, menuResult] = await Promise.all([
 	getSiteSettingsWithCacheHint(),
@@ -28,36 +39,42 @@ if (Astro.cache?.enabled) {
 	Astro.cache.set(menuResult.cacheHint);
 }
 
-const settings = settingsResult.data as { title?: string; tagline?: string };
-const siteTitle = settings?.title ?? SITE_NAME;
-const siteTagline = settings?.tagline ?? "碎碎唸";
+const settings = settingsResult.data as {
+	title?: string;
+	tagline?: string;
+	favicon?: { url?: string } | null;
+};
+const siteTagline = settings.tagline ?? "";
 const menu = menuResult.data as Menu | null;
-
-const fullTitle = meta.title ? `${meta.title} - ${siteTitle}` : siteTitle;
 
 const pageCtx = createPublicPageContext({
 	Astro,
-	kind: meta.content ? "content" : "custom",
-	pageType: "website",
-	title: fullTitle,
-	pageTitle: meta.pageTitle ?? meta.title,
-	description: meta.description ?? siteTagline,
-	canonical: meta.canonical,
-	image: meta.image,
-	content: meta.content,
-	siteName: siteTitle,
+	kind: seo.content ? "content" : "custom",
+	pageType: seo.pageType,
+	title: seo.title,
+	pageTitle: seo.pageTitle,
+	description: seo.description,
+	canonical: seo.canonical,
+	image: seo.image,
+	articleMeta: seo.article,
+	content: seo.content,
+	siteName: seo.siteName,
+	siteUrl: seo.siteUrl,
+	// EmDashHead reads robots from the page context's `seo` block; without this
+	// a `noindex` decision would be dropped before it reaches the head.
+	seo: seo.robots ? { robots: seo.robots } : undefined,
 });
 ---
 
 <!doctype html>
-<html lang="zh-Hant">
+<html lang={SITE_LOCALE}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/png" href={original.src} />
 		<meta name="generator" content={Astro.generator} />
-		<title>{fullTitle}</title>
+		<title>{seo.title}</title>
 		<EmDashHead page={pageCtx} />
+		<SiteHead seo={seo} faviconUrl={settings.favicon?.url ?? null} />
 		{
 			/*
 			 * Google Analytics 4 (G-LZ7NMQ1R85). Kept in the layout rather than a
@@ -95,7 +112,7 @@ const pageCtx = createPublicPageContext({
 		<main id="main">
 			<slot />
 		</main>
-		<Footer siteTitle={siteTitle} tagline={siteTagline} />
+		<Footer siteTitle={seo.siteName} tagline={siteTagline} />
 		<EmDashBodyEnd page={pageCtx} />
 	</body>
 </html>

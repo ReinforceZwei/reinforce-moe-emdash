@@ -2,14 +2,19 @@
 import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
 import Container from "../components/Container.astro";
-import { buildPageMeta } from "../lib/seo";
+import { resolveSeo } from "../lib/seo";
 import rem from "../assets/rem-404.png";
 
 // The copy is carried over verbatim from the old PHP site's 404.html.
-const meta = buildPageMeta("Not Found");
+// Not a page to index: noindex, and no canonical of its own value.
+const seo = await resolveSeo({
+	url: Astro.url,
+	title: "Not Found",
+	robots: "noindex, nofollow",
+});
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
 	<Container>
 		<div class="not-found">
 			<div class="not-found__text">

@@ -7,7 +7,7 @@ import CategoryList from "../components/CategoryList.astro";
 import TagList from "../components/TagList.astro";
 import MyProfile from "../components/MyProfile.astro";
 import { getPostList, parsePageNumber } from "../lib/content/posts";
-import { buildPageMeta } from "../lib/seo";
+import { resolveSeo } from "../lib/seo";
 import { getPostsPerPage } from "../lib/site";
 
 const limit = await getPostsPerPage();
@@ -20,10 +20,12 @@ if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const pageHref = (targetPage: number) =>
 	targetPage === 1 ? "/" : `/?page=${targetPage}`;
-const meta = buildPageMeta("");
+// No page title: the resolver falls back to the site name, so <title> and
+// og:title both carry it instead of being empty.
+const seo = await resolveSeo({ url: Astro.url });
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
 	<div class="main-content">
 		<WidgetSlot name="home-spotlight">
 			<div class="spotlight-fallback">

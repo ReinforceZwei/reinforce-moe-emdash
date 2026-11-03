@@ -35,6 +35,20 @@ export interface MediaRef {
   meta?: { storageKey?: string | null } | null;
 }
 
+/**
+ * Editor-set SEO values from the content SEO panel.
+ *
+ * Mirrors EmDash's `ContentSeo`. The entry query folds the `_emdash_seo` row
+ * into `data.seo`, so these are available without an extra query.
+ */
+export interface SeoPanel {
+  title?: string | null;
+  description?: string | null;
+  image?: string | null;
+  canonical?: string | null;
+  noIndex?: boolean;
+}
+
 export interface PostData {
   id: string;
   title: string;
@@ -47,7 +61,9 @@ export interface PostData {
   content?: unknown[] | null;
   featured_image?: MediaRef | string | null;
   publishedAt?: Date | string | null;
+  updatedAt?: Date | string | null;
   createdAt?: Date | string | null;
+  seo?: SeoPanel | null;
 }
 
 /** A post entry as returned by the content queries. */
@@ -57,6 +73,8 @@ export interface PostEntry {
   data: PostData;
   /** Visual-editing attributes injected by EmDash; spread onto headings. */
   edit?: Record<string, Record<string, string> | undefined> | null;
+  /** SEO panel values in the entry's legacy top-level position, if any. */
+  seo?: SeoPanel | null;
 }
 
 export interface PageEntry {
@@ -66,6 +84,11 @@ export interface PageEntry {
     id: string;
     title: string;
     content?: unknown[] | null;
+    excerpt?: string | null;
+    publishedAt?: Date | string | null;
+    updatedAt?: Date | string | null;
+    seo?: SeoPanel | null;
   };
   edit?: Record<string, Record<string, string> | undefined> | null;
+  seo?: SeoPanel | null;
 }

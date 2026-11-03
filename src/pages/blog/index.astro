@@ -1,7 +1,7 @@
 ---
 import Archive from "../../layouts/Archive.astro";
 import { getPostList, parsePageNumber } from "../../lib/content/posts";
-import { buildPageMeta } from "../../lib/seo";
+import { resolveSeo } from "../../lib/seo";
 import { getPostsPerPage } from "../../lib/site";
 
 const limit = await getPostsPerPage();
@@ -15,10 +15,13 @@ if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 const heading = "所有文章";
 const pageHref = (targetPage: number) =>
 	targetPage === 1 ? "/blog" : `/blog?page=${targetPage}`;
+
+// Paginated pages canonicalise to themselves (?page=N); page 1 has no query.
+const seo = await resolveSeo({ url: Astro.url, title: heading });
 ---
 
 <Archive
-	meta={buildPageMeta(heading)}
+	seo={seo}
 	heading={heading}
 	posts={posts}
 	termsByEntry={termsByEntry}

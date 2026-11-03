@@ -3,7 +3,7 @@ import { search } from "emdash";
 import Base from "../layouts/Base.astro";
 import Container from "../components/Container.astro";
 import Pagination from "../components/Pagination.astro";
-import { buildPageMeta } from "../lib/seo";
+import { resolveSeo } from "../lib/seo";
 
 // Target of the built-in `core:search` widget, which submits GET /search?q=.
 const q = (Astro.url.searchParams.get("q") ?? "").trim();
@@ -19,10 +19,15 @@ function hrefFor(result: { collection: string; slug: string | null }): string {
 	return result.collection === "posts" ? `/blog/${slug}` : `/${slug}`;
 }
 
-const meta = buildPageMeta(q ? `搜尋：${q}` : "搜尋");
+// Search result pages are query-dependent and add nothing to the index.
+const seo = await resolveSeo({
+	url: Astro.url,
+	title: q ? `搜尋：${q}` : "搜尋",
+	robots: "noindex, nofollow",
+});
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
 	<Container>
 		<h1>{q ? `搜尋：${q}` : "搜尋"}</h1>
 

@@ -1,0 +1,41 @@
+---
+/**
+ * Site-identity and locale tags EmDash does not emit.
+ *
+ * `EmDashHead` covers the SEO panel, OG/Twitter, canonical and JSON-LD, but its
+ * contribution pipeline cannot carry icon links (`PageMetadataLinkRel` allows
+ * only canonical/alternate/author/license classes) and it has no setting for
+ * `og:locale` or `theme-color`, so those live here.
+ *
+ * Favicon precedence: Admin → Settings → Site favicon wins when set. EmDash
+ * already emits `<link rel="icon">` for it, so that branch only adds the
+ * Apple touch icon. With no favicon configured, the in-repo source art is
+ * served at the three sizes browsers request.
+ */
+import type { SeoContext } from "../lib/seo";
+import { getSiteIcons, SITE_THEME_COLOR } from "../lib/icons";
+
+interface Props {
+  seo: SeoContext;
+  /** Resolved `site:favicon` URL, when an editor has set one. */
+  faviconUrl?: string | null;
+}
+
+const { seo, faviconUrl = null } = Astro.props;
+const icons = faviconUrl ? null : await getSiteIcons();
+---
+
+<meta property="og:locale" content={seo.locale} />
+<meta name="theme-color" content={SITE_THEME_COLOR} />
+
+{
+  faviconUrl ? (
+    <link rel="apple-touch-icon" href={faviconUrl} />
+  ) : (
+    <>
+      <link rel="icon" type="image/png" sizes="32x32" href={icons!.small} />
+      <link rel="icon" type="image/png" sizes="192x192" href={icons!.large} />
+      <link rel="apple-touch-icon" sizes="180x180" href={icons!.apple} />
+    </>
+  )
+}
