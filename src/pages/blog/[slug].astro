@@ -3,7 +3,8 @@ import { getEmDashEntry, getEntryTerms, decodeSlug } from "emdash";
 import Base from "../../layouts/Base.astro";
 import Post from "../../components/Post.astro";
 import { splitTerms } from "../../lib/content/terms";
-import { buildEntryMeta } from "../../lib/seo";
+import { resolvePostImage } from "../../lib/content/media";
+import { resolveSeo } from "../../lib/seo";
 
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
@@ -19,9 +20,21 @@ const [categoryTerms, tagTerms] = await Promise.all([
 ]);
 const terms = splitTerms(categoryTerms, tagTerms);
 
-const meta = buildEntryMeta(post, { collection: "posts", slug, url: Astro.url });
+// A post is an article: og:type, article:* tags and BlogPosting JSON-LD all
+// follow from here. The featured image is the social image unless the SEO
+// panel overrides it (resolveSeo applies that precedence).
+const featured = resolvePostImage(post, Astro.locals.emdash?.getPublicMediaUrl);
+
+const seo = await resolveSeo({
+	url: Astro.url,
+	entry: post,
+	collection: "posts",
+	slug,
+	pageType: "article",
+	image: featured?.src ?? null,
+});
 ---
 
-<Base meta={meta}>
+<Base seo={seo}>
 	<Post post={post} terms={terms} />
 </Base>

@@ -1,8 +1,8 @@
 ---
-import { decodeSlug, getTerm } from "emdash";
 import Archive from "../../layouts/Archive.astro";
+import { decodeSlug, getTerm } from "emdash";
 import { getPostList, parsePageNumber } from "../../lib/content/posts";
-import { buildPageMeta } from "../../lib/seo";
+import { resolveSeo } from "../../lib/seo";
 import { getPostsPerPage } from "../../lib/site";
 
 const slug = decodeSlug(Astro.params.slug);
@@ -24,10 +24,12 @@ if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const pageHref = (targetPage: number) =>
 	targetPage === 1 ? Astro.url.pathname : `${Astro.url.pathname}?page=${targetPage}`;
+
+const seo = await resolveSeo({ url: Astro.url, title: heading });
 ---
 
 <Archive
-	meta={buildPageMeta(heading)}
+	seo={seo}
 	heading={heading}
 	posts={posts}
 	termsByEntry={termsByEntry}
