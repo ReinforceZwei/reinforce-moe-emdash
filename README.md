@@ -2,7 +2,7 @@
 
 [Reinforce.moe](https://reinforce.moe) rebuilt on [EmDash](https://github.com/emdash-cms/emdash) — the Astro-native CMS.
 The layout and styles are ported from the previous Astro theme ([reinforce-moe-astro](https://github.com/ReinforceZwei/reinforce-moe-astro));
-all content now comes from EmDash collections instead of the Trilium content loader.
+all content now comes from EmDash collections.
 
 ## Stack
 
@@ -278,14 +278,9 @@ npm run backfill:decode-slugs -- /app/data/emdash.db --dedupe-orphan-terms
 
 ## Comments
 
-Comments use **EmDash's built-in system** (`emdash/ui/comments`), not Giscus. Posts are the only
+Comments use **EmDash's built-in system** (`emdash/ui/comments`). Posts are the only
 commentable collection (`"commentsEnabled": true` in `seed/seed.json`), and the post page renders
 `<Comments>` (threaded, with reactions) plus `<CommentForm>` with zh-Hant labels.
-
-Why the switch: no GitHub account is needed to comment, nothing is loaded from a third party, storage
-and moderation live in the same admin and SQLite database, and spam controls ship with it (honeypot,
-per-IP rate limit, optional Turnstile, moderation queue). Giscus instead puts every comment in GitHub
-Discussions, requires readers to sign in to GitHub, and cannot be moderated from EmDash.
 
 Enabling on an existing database is a schema change, not a deploy step — `seed.json` only bootstraps a
 fresh database:
@@ -314,7 +309,7 @@ exclude the comment list or moderation will appear to lag.
 
 ## Notes
 
-- Content was imported from the WordPress REST API and converted to Portable Text; scripts live outside this repo.
+- Content was imported from the WordPress using EmDash Wordpress migration plugin.
 - Post cards show **only** the featured image; posts without one render no image (the body's first inline image is deliberately not used). List queries do not expand media, so `src/lib/content/media.ts` accepts an expanded value, an id-only reference with `meta.storageKey`, the internal media route, or a bare URL string — a resolver that handles only one shape silently drops the image.
 - Admin auth is passkey-only, and WebAuthn requires a secure context — reach the admin over `localhost` (SSH tunnel), not a plain-HTTP LAN or tailnet address.
 - Images are optimised through Astro's `/_image` endpoint (`srcset` + WebP), which needs two things: `s3({ publicUrl })` so the media host is authorised at build time, and `width`/`height` on each Portable Text image block — emdash's `<Image>` silently degrades to a plain `<img>` without them. Blocks written by the admin editor carry the dimensions; imported content does not, so run `npm run backfill:image-dimensions -- /app/data/emdash.db` once after importing.
