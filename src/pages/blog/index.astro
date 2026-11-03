@@ -1,17 +1,20 @@
 ---
 import Archive from "../../layouts/Archive.astro";
-import { getPostList } from "../../lib/content/posts";
+import { getPostList, parsePageNumber } from "../../lib/content/posts";
 import { buildPageMeta } from "../../lib/seo";
 import { getPostsPerPage } from "../../lib/site";
 
-const cursor = Astro.url.searchParams.get("cursor") || undefined;
-const { posts, termsByEntry, nextCursor, cacheHint } = await getPostList({
-	cursor,
-	limit: await getPostsPerPage(),
+const limit = await getPostsPerPage();
+const page = parsePageNumber(Astro.url.searchParams.get("page"), limit);
+const { posts, termsByEntry, hasMore, cacheHint } = await getPostList({
+	page,
+	limit,
 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const heading = "所有文章";
+const pageHref = (targetPage: number) =>
+	targetPage === 1 ? "/blog" : `/blog?page=${targetPage}`;
 ---
 
 <Archive
@@ -19,6 +22,6 @@ const heading = "所有文章";
 	heading={heading}
 	posts={posts}
 	termsByEntry={termsByEntry}
-	prevHref={cursor ? "/blog" : null}
-	nextHref={nextCursor ? `/blog?cursor=${encodeURIComponent(nextCursor)}` : null}
+	prevHref={page > 1 ? pageHref(page - 1) : null}
+	nextHref={hasMore ? pageHref(page + 1) : null}
 />
