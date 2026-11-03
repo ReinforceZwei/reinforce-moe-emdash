@@ -1,0 +1,99 @@
+---
+/**
+ * Dev-only SEO introspection: what does the resolver actually produce, and why?
+ *
+ *   /seo-debug?collection=posts&slug=my-post
+ *   /seo-debug?collection=pages&slug=about
+ *
+ * Returns the resolved `SeoContext` next to the raw inputs it was computed
+ * from (SEO panel values, featured image, site settings). Comparing the two
+ * shows which layer won for every field, which is the question this codebase
+ * used to make hard to answer. Disabled outside `astro dev`.
+ */
+import { getEmDashEntry, decodeSlug } from "emdash";
+import { resolveSeo } from "../lib/seo";
+import { resolvePostImage } from "../lib/content/media";
+import type { PostEntry } from "../lib/content/types";
+import { getSiteSettings } from "emdash";
+
+if (!import.meta.env.DEV) {
+	return new Response("Not found", { status: 404 });
+}
+
+const collection = Astro.url.searchParams.get("collection");
+const rawSlug = Astro.url.searchParams.get("slug");
+
+if (!collection || !rawSlug) {
+	return new Response("usage: /seo-debug?collection=posts&slug=<slug>\n", {
+		status: 400,
+		headers: { "content-type": "text/plain; charset=utf-8" },
+	});
+}
+
+const slug = decodeSlug(rawSlug);
+if (!slug) {
+	return new Response("invalid slug\n", {
+		status: 400,
+		headers: { "content-type": "text/plain; charset=utf-8" },
+	});
+}
+
+const { entry: rawEntry } = await getEmDashEntry(collection, slug);
+if (!rawEntry) {
+	return new Response(`no entry ${collection}/${slug}\n`, {
+		status: 404,
+		headers: { "content-type": "text/plain; charset=utf-8" },
+	});
+}
+
+// EmDash types the row as a generic record; the site's narrow view model is
+// what the resolver and media helper consume.
+const entry = rawEntry as unknown as PostEntry;
+
+const pageType = collection === "posts" ? "article" : "website";
+const url = new URL(
+	collection === "posts" ? `/blog/${encodeURIComponent(slug)}` : `/${encodeURIComponent(slug)}`,
+	Astro.url.origin,
+);
+
+const settings = (await getSiteSettings()) as {
+	title?: string;
+	tagline?: string;
+	url?: string;
+	favicon?: { url?: string };
+	seo?: { titleSeparator?: string; defaultOgImage?: { url?: string } };
+};
+
+const seo = await resolveSeo({
+	url,
+	entry,
+	collection,
+	slug,
+	pageType,
+	image: resolvePostImage(entry, Astro.locals.emdash?.getPublicMediaUrl)?.src ?? null,
+});
+
+const payload = {
+	resolved: seo,
+	inputs: {
+		url: url.href,
+		collection,
+		slug,
+		// Panel values the resolver saw (they outrank everything else).
+		seoPanel: entry.seo ?? entry.data?.seo ?? null,
+		featuredImage:
+			resolvePostImage(entry, Astro.locals.emdash?.getPublicMediaUrl)?.src ?? null,
+		siteSettings: {
+			title: settings.title ?? null,
+			tagline: settings.tagline ?? null,
+			url: settings.url ?? null,
+			titleSeparator: settings.seo?.titleSeparator ?? null,
+			defaultOgImage: settings.seo?.defaultOgImage?.url ?? null,
+		},
+	},
+};
+
+return new Response(`${JSON.stringify(payload, null, 2)}\n`, {
+	headers: { "content-type": "application/json; charset=utf-8" },
+});
+---
