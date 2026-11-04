@@ -325,10 +325,14 @@ Page metadata has one source of truth and three thin consumers:
   `og:image:width/height/type/alt`. It is a plugin rather than layout code because `EmDashHead`
   re-derives `og:image` from the SEO panel on every content page; plugin contributions resolve first,
   so this is the only layer that can win. Cards are therefore ~140 KB instead of the multi-megabyte
-  upload (a 2032×1145 PNG was 3.19 MB). Sources are only wrapped when the host is authorised
-  (`S3_PUBLIC_URL`, which EmDash bakes into `image.remotePatterns`) — an unauthorised host, SVG or a
-  same-origin source keeps its original URL rather than becoming a broken card. The JSON-LD image
-  keeps the original file, so structured data is not limited by the card crop.
+  upload (a 2032×1145 PNG was 3.19 MB). A source is only wrapped when the image endpoint can actually
+  fetch it — a storage key on the media host (`S3_PUBLIC_URL`, which EmDash bakes into
+  `image.remotePatterns`). That includes SEO-panel images, which EmDash hands over as the internal
+  `/_emdash/api/media/file/<key>` route: the key is swapped for its storage URL before resizing, so an
+  editor-set social image is resized too. An unauthorised host, an SVG, a bare media id (no extension,
+  so no object on the media host) or a same-origin source keeps its original URL rather than becoming a
+  broken card. The JSON-LD image keeps the original file, so structured data is not limited by the card
+  crop.
 
 `npm run check:seo <base-url>` asserts all of this against a running deployment (targets discovered
 from `sitemap.xml`), including that article cards are resized derivatives with dimensions. In `astro

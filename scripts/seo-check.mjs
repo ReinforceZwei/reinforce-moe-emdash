@@ -144,20 +144,31 @@ function imageOrigin(url) {
   }
 }
 
+/** EmDash's internal media route; the same file as the storage URL for `key`. */
+const INTERNAL_MEDIA_PREFIX = "/_emdash/api/media/file/";
+
 /**
- * The original file behind a card URL: for `/_image?href=…` that is the `href`
- * argument, otherwise the URL itself. Lets og:image and the JSON-LD image be
- * compared by source, since one may be a derivative of the other.
+ * The file behind a card URL, normalised so the same upload compares equal
+ * however it is addressed: `/_image?href=…` → its source, the internal media
+ * route → its storage key, anything else → its path. The CDN URL and the
+ * app-proxied route are the same file, and comparing hosts would miss that.
  */
 function imageSource(url) {
   if (!url) return url;
+  let parsed;
   try {
-    const parsed = new URL(url);
-    if (parsed.pathname === "/_image") return parsed.searchParams.get("href") ?? url;
+    parsed = new URL(url);
   } catch {
-    // not a URL: compare as-is
+    return url;
   }
-  return url;
+  if (parsed.pathname === "/_image") {
+    const href = parsed.searchParams.get("href");
+    return href ? imageSource(href) : url;
+  }
+  if (parsed.pathname.startsWith(INTERNAL_MEDIA_PREFIX)) {
+    return parsed.pathname.slice(INTERNAL_MEDIA_PREFIX.length);
+  }
+  return parsed.pathname.replace(/^\/+/, "");
 }
 
 function assertCommon(scope, head, { expectNoIndex = false } = {}) {
