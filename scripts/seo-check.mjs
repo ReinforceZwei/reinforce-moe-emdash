@@ -126,6 +126,40 @@ const one = (head, key) => head.meta.get(key)?.[0];
 const all = (head, key) => head.meta.get(key) ?? [];
 const isAbsolute = (value) => /^https?:\/\//i.test(value ?? "");
 
+/** True when the URL is this site's image endpoint (a resized derivative). */
+function isDerivative(url) {
+  try {
+    return new URL(url).pathname === "/_image";
+  } catch {
+    return false;
+  }
+}
+
+/** Origin of a URL, or empty when it does not parse. */
+function imageOrigin(url) {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * The original file behind a card URL: for `/_image?href=…` that is the `href`
+ * argument, otherwise the URL itself. Lets og:image and the JSON-LD image be
+ * compared by source, since one may be a derivative of the other.
+ */
+function imageSource(url) {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.pathname === "/_image") return parsed.searchParams.get("href") ?? url;
+  } catch {
+    // not a URL: compare as-is
+  }
+  return url;
+}
+
 function assertCommon(scope, head, { expectNoIndex = false } = {}) {
   check(scope, "<title> present and unique", head.titleCount === 1 && head.title.length > 0);
   check(scope, "meta description", (one(head, "description") ?? "").length > 0);
@@ -152,6 +186,16 @@ function assertCommon(scope, head, { expectNoIndex = false } = {}) {
   check(scope, "twitter:card", card === "summary" || card === "summary_large_image", card);
   const twitterImage = one(head, "twitter:image");
   check(scope, "twitter:image absolute when present", !twitterImage || isAbsolute(twitterImage), twitterImage ?? "");
+
+  // When og:image is our resized derivative, the declared dimensions are part
+  // of the contract: checkers such as opengraph.to flag a card that omits them,
+  // and a wrong pair is worse than none. Only asserted for `/_image` URLs,
+  // because that is the only case where this site knows the real dimensions.
+  if (image && isDerivative(image)) {
+    check(scope, "og:image:width", /^\d+$/.test(one(head, "og:image:width") ?? ""), one(head, "og:image:width") ?? "missing");
+    check(scope, "og:image:height", /^\d+$/.test(one(head, "og:image:height") ?? ""), one(head, "og:image:height") ?? "missing");
+    check(scope, "og:image:type", /^image\//.test(one(head, "og:image:type") ?? ""), one(head, "og:image:type") ?? "missing");
+  }
 
   const themeColor = one(head, "theme-color") ?? "";
   check(scope, "theme-color", /^#[0-9a-f]{3,8}$/i.test(themeColor), themeColor);
@@ -293,10 +337,30 @@ for (const target of pages) {
     } else {
       check(scope, "og:image present", Boolean(image), "structured data has an image but og:image does not");
     }
+
+    // The card must not be the raw upload: a 2032px PNG was 3.19 MB. Two
+    // exceptions are allowed, because neither can be improved here: SVG (not
+    // re-encodable) and same-origin media (the image endpoint only fetches
+    // hosts from `remotePatterns`, so it would 403 rather than resize).
+    if (image && !/\.svgz?($|\?)/i.test(image) && imageOrigin(image) !== origin) {
+      check(
+        scope,
+        "og:image is a resized derivative",
+        isDerivative(image),
+        `points at the original file: ${image}`,
+      );
+    }
+
     const published = one(head, "article:published_time") ?? "";
     check(scope, "article:published_time", !Number.isNaN(Date.parse(published)), published);
     check(scope, "BlogPosting JSON-LD", types.includes("BlogPosting"), types.join(","));
-    check(scope, "og:image matches JSON-LD image", !ldImage || ldImage === image, `${image} vs ${ldImage}`);
+    const structuredImage = Array.isArray(ldImage) ? ldImage[0] : ldImage;
+    check(
+      scope,
+      "og:image matches JSON-LD image source",
+      !structuredImage || imageSource(structuredImage) === imageSource(image),
+      `${imageSource(image)} vs ${imageSource(structuredImage)}`,
+    );
   } else if (target.kind === "home" || target.kind === "list") {
     check(scope, "og:type=website", one(head, "og:type") === "website", one(head, "og:type"));
     check(scope, "WebSite JSON-LD", types.includes("WebSite"), types.join(","));
