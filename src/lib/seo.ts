@@ -21,6 +21,7 @@
 import { getSiteSettings } from "emdash";
 
 import type { MediaRef, PageEntry, PostEntry } from "./content/types";
+import { buildOgImage } from "./og-image";
 
 /** Language of the site: `<html lang>` and the `og:locale` base. */
 export const SITE_LOCALE = process.env.PUBLIC_SITE_LOCALE || "zh-Hant";
@@ -191,8 +192,11 @@ export async function resolveSeo(input: SeoInput): Promise<SeoContext> {
     null;
 
   const configuredImage = settings.seo?.defaultOgImage?.url;
-  const imageRef = panel?.image || input.image || configuredImage || null;
-  const image = imageRef ? resolveImageRef(imageRef, origin) : null;
+  const imageSource = panel?.image || input.image || configuredImage || null;
+  const originalImage = imageSource ? resolveImageRef(imageSource, origin) : null;
+  // Social cards get a resized derivative; structured data and the page context
+  // use the same URL so og:image, twitter:image and JSON-LD cannot disagree.
+  const image = buildOgImage(originalImage, origin)?.url ?? originalImage;
 
   const canonical = panel?.canonical
     ? toAbsolute(panel.canonical, origin)

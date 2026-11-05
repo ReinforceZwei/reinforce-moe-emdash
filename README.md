@@ -307,6 +307,37 @@ verification fails closed and every comment is rejected.
 Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
 exclude the comment list or moderation will appear to lag.
 
+## SEO
+
+Page metadata has one source of truth and three thin consumers:
+
+- **`src/lib/seo.ts` — `resolveSeo()`.** Every page hands it raw inputs (an entry, a computed heading,
+  the request URL) and gets a `SeoContext` back. Precedence is applied in one place:
+  `SEO panel → page-computed → entry data → site settings → fallback`. Site name, tagline, title
+  separator and default OG image all come from Admin → Settings; nothing about the site is hardcoded.
+  Posts are `pageType: "article"` (so `og:type`, `article:*` and `BlogPosting` JSON-LD follow), pages
+  are `website`, and canonical URLs are always produced — paginated lists keep `?page=N`, tracking
+  params are dropped.
+- **`EmDashHead`** renders OG/Twitter/canonical/JSON-LD from that context. **`SiteHead`** adds the
+  tags EmDash cannot (`og:locale`, `theme-color`, sized icons generated from
+  `src/assets/original.png`; a configured `site:favicon` wins).
+- **`src/plugins/og-image`** rewrites `og:image` to a 1200×630 JPEG on the `/_image` endpoint and emits
+  `og:image:width/height/type/alt`. It is a plugin rather than layout code because `EmDashHead`
+  re-derives `og:image` from the SEO panel on every content page; plugin contributions resolve first,
+  so this is the only layer that can win. Cards are therefore ~140 KB instead of the multi-megabyte
+  upload (a 2032×1145 PNG was 3.19 MB). A source is only wrapped when the image endpoint can actually
+  fetch it — a storage key on the media host (`S3_PUBLIC_URL`, which EmDash bakes into
+  `image.remotePatterns`). That includes SEO-panel images, which EmDash hands over as the internal
+  `/_emdash/api/media/file/<key>` route: the key is swapped for its storage URL before resizing, so an
+  editor-set social image is resized too. An unauthorised host, an SVG, a bare media id (no extension,
+  so no object on the media host) or a same-origin source keeps its original URL rather than becoming a
+  broken card. The JSON-LD image keeps the original file, so structured data is not limited by the card
+  crop.
+
+`npm run check:seo <base-url>` asserts all of this against a running deployment (targets discovered
+from `sitemap.xml`), including that article cards are resized derivatives with dimensions. In `astro
+dev`, `/seo-debug?collection=posts&slug=…` dumps the resolved context next to the inputs it came from.
+
 ## Notes
 
 - Content was imported from the WordPress using EmDash Wordpress migration plugin.

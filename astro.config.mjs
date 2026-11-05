@@ -213,7 +213,20 @@ export default defineConfig({
 			// credentials are plugin settings stored in the database — enter the API key on
 			// the plugin's admin page — and exactly one provider delivers at a time, so pick
 			// it under Settings → Email. Without a provider, invites must be copied by hand.
-			plugins: [emdashSmtp()],
+			//
+			// `og-image` (site-local, src/plugins/og-image) rewrites og:image to a resized
+			// derivative. It has to be a plugin rather than layout code: EmDashHead re-derives
+			// og:image from the SEO panel on every content page, and plugin contributions are
+			// resolved before those defaults, so this is the only layer that can win.
+			plugins: [
+				emdashSmtp(),
+				{
+					id: "og-image",
+					version: "1.0.0",
+					format: "native",
+					entrypoint: "/src/plugins/og-image/index.ts",
+				},
+			],
 		}),
 	],
 	devToolbar: { enabled: false },
