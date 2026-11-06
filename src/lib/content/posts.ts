@@ -37,6 +37,32 @@ export function parsePageNumber(value: string | null, limit: number): number {
   return Number.isSafeInteger(page) && page > 0 && Number.isSafeInteger(offset) ? page : 1;
 }
 
+/**
+ * The post a partial slug can only mean, or `null`.
+ *
+ * WordPress answered a miss with `redirect_guess_404_permalink()`: when a slug
+ * prefixed exactly one post it 301'd there instead of 404ing. That is how
+ * `/blog/parsec` — the real slug with its percent-encoded CJK tail cut off, by
+ * a crawler or a shared link — kept landing on the article for years. EmDash
+ * has no such fallback, so the guess is reproduced here: same rule, one query,
+ * and nothing when the prefix is ambiguous.
+ */
+export async function guessPostSlug(prefix: string): Promise<string | null> {
+  // A lexicographic range on `slug` is a prefix seek: `prefix` up to the last
+  // code point sorts above every slug that starts with it, so SQLite uses the
+  // index instead of scanning the collection.
+  const { entries } = await getEmDashCollection("posts", {
+    status: "published",
+    limit: 2,
+    where: { slug: { gte: prefix, lt: `${prefix}\u{10FFFF}` } },
+  });
+
+  if (entries.length !== 1) return null;
+  const [match] = entries;
+  const found = match.data.slug;
+  return found?.startsWith(prefix) ? found : null;
+}
+
 export async function getPostList({
   where,
   page,

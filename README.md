@@ -276,6 +276,13 @@ deletes the copy that no content references before decoding:
 npm run backfill:decode-slugs -- /app/data/emdash.db --dedupe-orphan-terms
 ```
 
+**Partial slugs still resolve.** A slug that prefixes exactly one published post is a real inbound
+link — a share or crawler that dropped the percent-encoded CJK tail of `/blog/parsec：…`, which
+arrives as `/blog/parsec`. WordPress answered those with `redirect_guess_404_permalink()`; EmDash
+404s, so `/blog/[slug]` calls `guessPostSlug()` after a miss and 301s to the encoded slug of the
+single match. An ambiguous prefix (two posts share it) or no match still 404s, and the redirect is
+never route-cached.
+
 ## Comments
 
 Comments use **EmDash's built-in system** (`emdash/ui/comments`). Posts are the only
