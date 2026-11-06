@@ -3,6 +3,7 @@ import { getEmDashEntry, getEntryTerms, decodeSlug } from "emdash";
 import Base from "../../layouts/Base.astro";
 import Post from "../../components/Post.astro";
 import { splitTerms } from "../../lib/content/terms";
+import { guessPostSlug } from "../../lib/content/posts";
 import { resolvePostImage } from "../../lib/content/media";
 import { resolveSeo } from "../../lib/seo";
 
@@ -10,7 +11,14 @@ const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
 
 const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
-if (!post) return Astro.rewrite("/404");
+if (!post) {
+	// A partial slug — a share or crawler that dropped the percent-encoded CJK
+	// tail — 301s to the post it can only mean, the way WordPress's permalink
+	// guess did. An ambiguous prefix still 404s.
+	const guessed = await guessPostSlug(slug);
+	if (guessed) return Astro.redirect(`/blog/${encodeURIComponent(guessed)}`, 301);
+	return Astro.rewrite("/404");
+}
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Two queries, because a term does not say which taxonomy it belongs to.
