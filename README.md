@@ -314,6 +314,68 @@ verification fails closed and every comment is rejected.
 Comment pages are server-rendered per request; if Astro caching is enabled for them, cache hints must
 exclude the comment list or moderation will appear to lag.
 
+## Visitors
+
+`src/plugins/visitors` is the site's own visitor counter — a native EmDash plugin that replaces WP
+Statistics without a second service. It injects one inline beacon into every public page through
+`page:fragments`, counts in a public plugin route, and renders its admin page, dashboard card and
+per-post panel from Block Kit. There is no `admin.entry`, so no plugin JavaScript runs in the admin
+and there is no React bundle to keep in step with EmDash's host-only peers.
+
+| File | Purpose |
+| --- | --- |
+| `index.ts` | plugin descriptor: storage, hooks, the `track` / `admin` / `editor/views` routes |
+| `lib.ts` | pure rules — day boundary, path classification, referrer/device/bot classification, hashes |
+| `beacon.ts` | the inline script, with endpoint and entry key baked in at render time |
+| `store.ts` | document shapes and the write path (views, visitors, visits, dimensions) |
+| `queries.ts` | read path for the admin: chart series, KPIs, top entries, dimensions |
+| `admin/` | Block Kit builders and the interaction dispatcher |
+
+### How a view is counted
+
+- The beacon posts `{ p, r, sid, k }` to `/_emdash/api/plugins/visitors/track` — the path, the raw
+  `document.referrer`, a `sessionStorage` id, and the entry key baked into the page.
+- **Views** count every accepted hit (a refresh is a view). **Visitors** dedupe per
+  visitor × page × day: `sha256(day|path|ip|ua|salt)`, so a reader who opens three posts counts three
+  views and three visitors, and the same reader tomorrow counts again.
+- **Visits** come from the `sessionStorage` id — one per tab — so `views ÷ visits` is pages per visit.
+- Day boundary is 00:00 Asia/Taipei. Bots are dropped by user agent. A path that is not home, an
+  entry or a known listing is dropped rather than attributed (no 404 counting). Admin pages never
+  carry the beacon. Signed-in editors are counted like everyone else — there is no opt-out.
+- Counting happens in the browser, not in the fragment hook: public pages are route-cached for 24 h,
+  so a hook-side counter would only ever see cache misses.
+
+### What it stores
+
+Counters live in `_plugin_storage` in the same SQLite file as the CMS, so the existing backup service
+already covers them: `visits` (one row per visitor × page × day), `sessions`, `days` (per-day
+rollup), `totals` (per entry / per path / site) and `dims` (per referrer host, channel, device, page
+kind).
+
+Each hit row keeps the **raw IP and the full referrer**, matching WP Statistics. A nightly cron
+(`0 3 * * *`) deletes rows older than the retention window — `retentionDays`, default 400, editable
+on the plugin's settings page — while daily rollups are kept forever. Country is deliberately not
+stored: Google Analytics keeps that (`G-LZ7NMQ1R85` stays permanently), and the admin links to it.
+
+### Why the numbers differ from GA4
+
+Different identity (a salted per-day hash vs a cookie), different bot handling, and listings:
+tag/category/archive/search pages are their own rows and map to no post, so per-post visitors can
+never sum to the site total. On the old WP data listings were roughly a third of all traffic.
+
+### Verifying
+
+```bash
+cp data.db .verify/emdash.db
+EMDASH_DB_PATH=./.verify/emdash.db npm run dev    # scratch DB, never production
+npm run verify:visitors                           # in another shell
+```
+
+The script runs every Block Kit response through `validateBlocks()` (EmDash does not validate a
+native plugin's block response, so this is the only guard), checks the path-classification table,
+drives the tracking endpoint through dedupe / new-tab / bot / unknown-path cases, and reads the rows
+back from SQLite. It writes test rows under a random IP — point it at a scratch database.
+
 ## SEO
 
 Page metadata has one source of truth and three thin consumers:

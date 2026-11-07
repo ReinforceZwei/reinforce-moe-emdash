@@ -226,6 +226,16 @@ export default defineConfig({
 					format: "native",
 					entrypoint: "/src/plugins/og-image/index.ts",
 				},
+				// `visitors` (src/plugins/visitors) is the site's own visitor counter:
+				// a beacon injected through `page:fragments` plus Block Kit admin
+				// surfaces. Native because page fragments are trusted-only, and with no
+				// `admin.entry` it renders entirely from blocks.
+				{
+					id: "visitors",
+					version: "1.0.0",
+					format: "native",
+					entrypoint: "/src/plugins/visitors/index.ts",
+				},
 			],
 		}),
 	],
