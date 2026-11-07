@@ -14,6 +14,7 @@
     "start": "node ./dist/server/entry.mjs",
     "typecheck": "astro check",
     "check:seo": "node scripts/seo-check.mjs",
+    "verify:visitors": "node scripts/verify-visitors.mjs",
     "backfill:decode-slugs": "node scripts/backfill-decode-slugs.mjs",
     "backfill:image-dimensions": "node scripts/backfill-image-dimensions.mjs",
     "backfill:publish-dates": "node scripts/backfill-publish-dates.mjs",
@@ -33,6 +34,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10"
+    "@astrojs/check": "^0.9.10",
+    "@emdash-cms/blocks": "^1.3.1"
   }
 }

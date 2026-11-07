@@ -12,6 +12,8 @@ data/
 import/
 # SQLite backups written by the `backup` service
 backups/
+# Scratch database used by `npm run verify:visitors`
+.verify/
 
 # Environment
 .env
