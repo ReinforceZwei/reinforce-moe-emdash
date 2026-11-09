@@ -271,7 +271,7 @@ export function overviewBlocks(summary: Summary, sort: SortRequest = null, reten
 			},
 			{
 				type: "context",
-				text: "Listing pages (blog, tag, category, archive, search) map to no entry, so per-entry numbers can never sum to the site total. On this site listings are roughly a third of traffic.",
+				text: "Listing pages (blog, tag, category, search) map to no entry, so per-entry numbers can never sum to the site total. On this site listings are roughly a third of traffic.",
 			},
 		);
 	}

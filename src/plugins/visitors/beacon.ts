@@ -17,6 +17,11 @@
  *
  * `text/plain` avoids a CORS preflight; `sendBeacon` with `application/json`
  * is blocked by some browsers.
+ *
+ * The beacon never sends from a not-found render. `404.astro` (which is also
+ * what an unknown category, tag-less slug or bad post slug rewrites to) sets
+ * `window.__visitors404` before this fragment runs, so a path that only exists
+ * because someone typed it wrong cannot inflate a listing count.
  */
 
 export interface BeaconOptions {
@@ -35,6 +40,7 @@ export function buildBeacon({ endpoint, entryKey }: BeaconOptions): string {
 	return `(function () {
 	if (window.__visitorsSent) return;
 	window.__visitorsSent = true;
+	if (window.__visitors404) return;
 	if (document.visibilityState === "prerender") return;
 	var sid = "";
 	try {

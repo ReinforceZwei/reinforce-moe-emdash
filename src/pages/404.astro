@@ -15,6 +15,16 @@ const seo = await resolveSeo({
 ---
 
 <Base seo={seo}>
+	{/*
+		Any path that renders this page is a not-found render — including the
+		unknown-slug, unknown-category and unknown-page rewrites in `src/pages`,
+		which keep the mistyped URL in the address bar. The layout's beacon is
+		injected at body:end, i.e. after this script, so the flag is set before
+		the beacon reads it and no 404 is ever counted as a pageview.
+	*/}
+	<script is:inline>
+		window.__visitors404 = true;
+	</script>
 	<Container>
 		<div class="not-found">
 			<div class="not-found__text">

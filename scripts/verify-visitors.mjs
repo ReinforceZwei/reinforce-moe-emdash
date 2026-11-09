@@ -160,9 +160,9 @@ async function checkClassification() {
 		["/about", "page"],
 		["/tag/taiwan", "listing"],
 		["/category/notes", "listing"],
-		["/author/reinforce", "listing"],
+		["/author/reinforce", "unresolved"],
 		["/search", "listing"],
-		["/2024/01/02/old-post", "listing"],
+		["/2024/01/02/old-post", "unresolved"],
 		["/blog/a/b", "unresolved"],
 		["/tag/a/b", "unresolved"],
 	];
@@ -286,6 +286,15 @@ async function checkHttp() {
 	const home = await (await fetch(`${BASE_URL}/`)).text();
 	assert("beacon is injected on the home page", home.includes("/_emdash/api/plugins/visitors/track"));
 	assert("beacon is guarded against double injection", home.includes("__visitorsSent"));
+	assert("beacon honours the not-found flag", home.includes("if (window.__visitors404) return"));
+
+	// Every not-found render — an unknown category is the one the route table
+	// cannot catch on its own — must set the flag the beacon checks.
+	const notFoundHtml = await (await fetch(`${BASE_URL}/category/verify-missing-${RUN}`)).text();
+	assert(
+		"the 404 page sets the not-found flag",
+		notFoundHtml.includes("window.__visitors404 = true"),
+	);
 
 	const postPath = await firstPostPath();
 	if (!postPath) {

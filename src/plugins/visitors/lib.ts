@@ -23,7 +23,7 @@ export const DAY_MS = 86_400_000;
 export const DAY_OFFSET_MS = 8 * 3_600_000;
 
 export type VisitKind = "entry" | "page" | "home" | "listing";
-export type ListingType = "blog" | "tag" | "category" | "author" | "archive" | "search";
+export type ListingType = "blog" | "tag" | "category" | "search";
 export type SourceType = "search" | "social" | "referral" | "direct";
 export type DeviceType = "desktop" | "mobile" | "tablet";
 
@@ -98,8 +98,6 @@ export function normalisePath(raw: unknown): string | null {
 	return path || "/";
 }
 
-const ARCHIVE_PATH = /^\/(\d{4})\/(\d{2})(\/\d{2})?(\/|$)/;
-
 /**
  * Map a normalised path to its page kind.
  *
@@ -107,6 +105,11 @@ const ARCHIVE_PATH = /^\/(\d{4})\/(\d{2})(\/\d{2})?(\/|$)/;
  * shape returns `unresolved`, and the route drops it instead of inventing a
  * bucket. A route added later stops counting until it is classified here,
  * which the verify script catches.
+ *
+ * Only shapes that actually render are classified. There is no `/author/<slug>`
+ * and no date archive on this site — both returned a 404 page — so they are not
+ * listings; and a path that 404s is handled by the page itself rather than here:
+ * `404.astro` sets `window.__visitors404`, which the beacon refuses to send.
  */
 export function classifyPath(path: string): PathInfo {
 	const none: PathInfo = { kind: "unresolved", listingType: null, collection: null, slug: null };
@@ -124,14 +127,10 @@ export function classifyPath(path: string): PathInfo {
 	if (segments.length === 2 && segments[0] === "tag") {
 		return { kind: "listing", listingType: "tag", collection: null, slug: null };
 	}
+	// A category that does not exist rewrites to the 404 page, which suppresses
+	// its own beacon; a real one renders here.
 	if (segments.length === 2 && segments[0] === "category") {
 		return { kind: "listing", listingType: "category", collection: null, slug: null };
-	}
-	if (segments.length === 2 && segments[0] === "author") {
-		return { kind: "listing", listingType: "author", collection: null, slug: null };
-	}
-	if (ARCHIVE_PATH.test(path)) {
-		return { kind: "listing", listingType: "archive", collection: null, slug: null };
 	}
 	// CMS pages live at the site root, so a single segment is a page slug. The
 	// caller resolves it: a slug that does not exist is `unresolved`.
