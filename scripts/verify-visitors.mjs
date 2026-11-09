@@ -2,15 +2,19 @@
 /**
  * End-to-end check for the visitors plugin.
  *
- * Three layers, because each one catches a different class of failure:
+ * Layers, because each one catches a different class of failure:
  *
- *   1. Block Kit — the builders are bundled with esbuild and every response the
+ *   1. Block Kit — the builders are bundled with rolldown and every response the
  *      admin can receive is run through `validateBlocks()`. EmDash does not
  *      validate a *native* plugin's block response, so this is the only guard
  *      against a malformed block blanking the admin page.
  *   2. Path classification — the site's real routes must all classify, so a new
- *      route cannot silently stop counting.
- *   3. HTTP + SQLite — a running dev server is asked to track hits and the rows
+ *      route cannot silently stop counting, and a path with no route cannot
+ *      quietly count as a listing.
+ *   3. Pure queries — retention/pruning and the dashboard widget run against
+ *      fake storage, so their cost (how many reads, of which collection) is an
+ *      assertion rather than a hope.
+ *   4. HTTP + SQLite — a running dev server is asked to track hits and the rows
  *      it wrote are read back from `_plugin_storage`.
  *
  * Usage:
@@ -107,6 +111,21 @@ function fixtureSummary() {
 	};
 }
 
+/** The dashboard card's own shape — deliberately not a `Summary`. */
+function fixtureWidget() {
+	const today = new Date().toISOString().slice(0, 10);
+	return {
+		today: { day: today, views: 40, uniques: 30, sessions: 20 },
+		week: { views: 281, uniques: 212, sessions: 141 },
+		allTime: { views: 125_367, uniques: 74_699, sessions: 145_196, since: Date.now() - 3 * 365 * 86_400_000 },
+		entries: [
+			{ title: "A post title", views: 900 },
+			{ title: "另一個標題", views: 400 },
+			{ title: "Third", views: 100 },
+		],
+	};
+}
+
 async function checkBlocks() {
 	console.log("\nBlock Kit");
 	const blocks = await bundle("src/plugins/visitors/admin/blocks.ts", "blocks");
@@ -119,10 +138,10 @@ async function checkBlocks() {
 			"overview (empty state)",
 			blocks.overviewBlocks({ ...fixtureSummary(), allTime: { views: 0, uniques: 0, sessions: 0, since: null } }),
 		],
-		["widget", blocks.widgetBlocks(fixtureSummary())],
+		["widget", blocks.widgetBlocks(fixtureWidget())],
 		[
 			"widget (empty state)",
-			blocks.widgetBlocks({ ...fixtureSummary(), allTime: { views: 0, uniques: 0, sessions: 0, since: null } }),
+			blocks.widgetBlocks({ ...fixtureWidget(), allTime: { views: 0, uniques: 0, sessions: 0, since: null } }),
 		],
 		[
 			"entry panel",
@@ -252,7 +271,90 @@ async function checkRetention() {
 	assert("visit pruning leaves sessions alone", visitsOnly.calls.sessionQueries.length === 0);
 }
 
-// --- 4. HTTP -----------------------------------------------------------------
+// --- 4. The dashboard widget query -------------------------------------------
+
+async function checkWidget() {
+	console.log("\nDashboard widget query");
+	const queries = await bundle("src/plugins/visitors/queries.ts", "queries");
+
+	// The card must not scan the hit log: `visits.count()` here is a tripwire,
+	// not a stub. `summary()` would call it dozens of times.
+	const calls = { counts: 0, totalsQueries: 0, titles: 0 };
+	const ctx = {
+		storage: {
+			days: {
+				getMany: async (ids) =>
+					new Map(ids.map((id) => [id, { day: id.slice(4), views: 10, uniques: 5, sessions: 2, updatedAt: 0 }])),
+			},
+			totals: {
+				get: async (id) =>
+					id === "site"
+						? {
+								scope: "site",
+								views: 500,
+								uniques: 400,
+								sessions: 250,
+								firstSeen: 1_700_000_000_000,
+								updatedAt: Date.now(),
+							}
+						: null,
+				query: async (options) => {
+					calls.totalsQueries += 1;
+					calls.limit = options?.limit;
+					return {
+						items: [
+							{
+								id: "entry:posts:01ABC",
+								data: {
+									scope: "entry",
+									entryKey: "posts:01ABC",
+									path: "/blog/a-post",
+									views: 120,
+									uniques: 90,
+									sessions: 60,
+									firstSeen: 0,
+									updatedAt: Date.now(),
+								},
+							},
+						],
+						hasMore: false,
+					};
+				},
+			},
+			visits: {
+				count: async () => {
+					calls.counts += 1;
+					return 0;
+				},
+				query: async () => {
+					calls.counts += 1;
+					return { items: [], hasMore: false };
+				},
+			},
+		},
+		content: {
+			get: async () => {
+				calls.titles += 1;
+				return { data: { title: "A post" }, slug: "a-post" };
+			},
+		},
+	};
+
+	const data = await queries.widgetSummary(ctx);
+	assert("the widget summary counts no visits", calls.counts === 0, `${calls.counts} hit-log reads`);
+	assert("the widget summary makes one totals query", calls.totalsQueries === 1, `${calls.totalsQueries} queries`);
+	assert("the widget summary asks for three entries", calls.limit === 3, `limit ${calls.limit}`);
+	assert("the widget summary sums the week", data.week.views === 70 && data.today.views === 10, JSON.stringify(data.week));
+	assert("the widget summary reads all time from the site counter", data.allTime.views === 500, String(data.allTime.views));
+	assert(
+		"the widget summary resolves its titles",
+		data.entries.length === 1 && data.entries[0].title === "A post" && calls.titles === 1,
+		JSON.stringify(data.entries),
+	);
+}
+
+// --- 5. HTTP -----------------------------------------------------------------
+
 async function post(body, headers = {}) {
 	const merged = { "content-type": "text/plain", "user-agent": TEST_UA, "x-forwarded-for": TEST_IP, ...headers };
 	// A `null` value removes the header, so a case can simulate a request that
@@ -403,7 +505,7 @@ async function checkHttp() {
 	return { postPath, differentPost };
 }
 
-// --- 5. SQLite ---------------------------------------------------------------
+// --- 6. SQLite ---------------------------------------------------------------
 
 async function checkStorage(context) {
 	console.log("\nStorage");
@@ -524,6 +626,7 @@ try {
 	await checkBlocks();
 	await checkClassification();
 	await checkRetention();
+	await checkWidget();
 	const context = await checkHttp();
 	await checkStorage(context);
 } catch (error) {

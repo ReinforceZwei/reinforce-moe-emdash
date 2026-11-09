@@ -14,7 +14,7 @@
 import type { Block, TableColumn } from "@emdash-cms/blocks";
 
 import { DAY_OFFSET_MS } from "../lib";
-import type { DimRowView, EntryRow, Period, Summary } from "../queries";
+import type { DimRowView, EntryRow, Period, Summary, WidgetSummary } from "../queries";
 import { PERIODS } from "../queries";
 
 const numberFormat = new Intl.NumberFormat("en-US");
@@ -289,9 +289,9 @@ export function overviewBlocks(summary: Summary, sort: SortRequest = null, reten
 	return blocks;
 }
 
-/** The dashboard card: a trio and the top three, so it costs no extra endpoint. */
-export function widgetBlocks(summary: Summary): Block[] {
-	if (summary.allTime.views === 0) {
+/** The dashboard card: a quartet and the top three, from `widgetSummary()`. */
+export function widgetBlocks(data: WidgetSummary): Block[] {
+	if (data.allTime.views === 0) {
 		return [
 			{
 				type: "empty",
@@ -302,15 +302,15 @@ export function widgetBlocks(summary: Summary): Block[] {
 		];
 	}
 
-	const perVisit = summary.allTime.sessions > 0 ? summary.allTime.views / summary.allTime.sessions : 0;
+	const perVisit = data.allTime.sessions > 0 ? data.allTime.views / data.allTime.sessions : 0;
 
 	return [
 		{
 			type: "stats",
 			items: [
-				{ label: "Today", value: num(summary.today.views) },
-				{ label: "Last 7 days", value: num(summary.series.slice(-7).reduce((total, row) => total + row.views, 0)) },
-				{ label: "All time", value: num(summary.allTime.views) },
+				{ label: "Today", value: num(data.today.views) },
+				{ label: "Last 7 days", value: num(data.week.views) },
+				{ label: "All time", value: num(data.allTime.views) },
 				{ label: "Views/visit", value: perVisit > 0 ? perVisit.toFixed(1) : "—" },
 			],
 		},
@@ -320,7 +320,7 @@ export function widgetBlocks(summary: Summary): Block[] {
 				{ key: "title", label: "Top entry" },
 				{ key: "views", label: "Views", format: "number" },
 			],
-			rows: summary.entries.slice(0, 3).map((entry) => ({ title: entry.title, views: entry.views })),
+			rows: data.entries.map((entry) => ({ title: entry.title, views: entry.views })),
 			page_action_id: "noop",
 			empty_text: "No entry views yet.",
 		},

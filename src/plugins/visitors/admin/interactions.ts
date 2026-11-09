@@ -15,7 +15,7 @@
 import type { BlockInteraction, BlockResponse } from "@emdash-cms/blocks";
 import type { RouteContext } from "emdash";
 
-import { normalisePeriod, entryPanel, summary } from "../queries";
+import { normalisePeriod, entryPanel, summary, widgetSummary } from "../queries";
 import { retentionDays } from "../store";
 import { entryPanelBlocks, errorBlocks, overviewBlocks, widgetBlocks } from "./blocks";
 import type { SortRequest } from "./blocks";
@@ -56,8 +56,10 @@ export async function adminInteraction(ctx: RouteContext): Promise<BlockResponse
 
 	try {
 		if (isWidget) {
-			// The card shows a fixed trio, so it always asks for the default period.
-			const data = await summary(ctx, normalisePeriod(undefined));
+			// The card renders all-time and seven-day figures only, so it asks the
+			// narrow query — not `summary()`, which would build a period table and
+			// four dimension breakdowns the card never shows.
+			const data = await widgetSummary(ctx);
 			return { blocks: widgetBlocks(data) };
 		}
 

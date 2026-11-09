@@ -353,6 +353,53 @@ export async function summary(ctx: PluginContext, period: Period): Promise<Summa
 	};
 }
 
+/** What the dashboard card renders: today, the last week, all time, top three. */
+export interface WidgetSummary {
+	today: DayCounts;
+	/** The last seven days summed — the card shows one number, not a series. */
+	week: Counters;
+	allTime: Counters & { since: number | null };
+	/** All-time leaders, titles resolved. Views are all-time on purpose. */
+	entries: { title: string; views: number }[];
+}
+
+/**
+ * The dashboard card's numbers, and nothing else.
+ *
+ * `summary()` computes a period table, four dimension breakdowns and a previous
+ * period; the card shows four figures and three rows, all of them all-time or
+ * seven-day. That was ~85-95 storage round trips per dashboard load for a card
+ * that needs three reads, so it gets its own query instead. No `visits.count()`
+ * runs here at all.
+ */
+export async function widgetSummary(ctx: PluginContext): Promise<WidgetSummary> {
+	const today = dayKey();
+	const [week, site, items] = await Promise.all([
+		readDays(ctx, daySpan(today, 7)),
+		readSiteTotals(ctx),
+		readItemTotals(ctx, 3),
+	]);
+
+	const entries: { title: string; views: number }[] = [];
+	for (const item of items) {
+		if (!item.entryKey) continue;
+		const { title } = await resolveTitle(ctx, item.entryKey);
+		entries.push({ title, views: item.views });
+	}
+
+	return {
+		today: week.length > 0 ? week[week.length - 1] : EMPTY_DAY(today),
+		week: sumDays(week),
+		allTime: {
+			views: site?.views ?? 0,
+			uniques: site?.uniques ?? 0,
+			sessions: site?.sessions ?? 0,
+			since: site?.firstSeen ?? null,
+		},
+		entries,
+	};
+}
+
 export interface EntryPanel {
 	path: string;
 	title: string;
