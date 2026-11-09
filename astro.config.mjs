@@ -86,6 +86,14 @@ export default defineConfig({
 	adapter: node({
 		mode: "standalone",
 	}),
+	// Canonical URLs never end in a slash (`buildCanonical` in src/lib/seo.ts strips it), but
+	// Astro matches routes whether or not one is present, so `/about/` rendered the same 200 as
+	// `/about` — two URLs for one page, and a crawler has to trust the canonical to tell them
+	// apart. `"never"` puts the normalisation in front of routing and the route cache: a GET is
+	// 301'd, any other method 308'd, the query string is kept, and `/_*` internal paths and a
+	// file name are left alone. EmDash reads the same option for the URLs it generates (sitemap,
+	// menus, hreflang), so links it emits match the canonical too.
+	trailingSlash: "never",
 	security: {
 		allowedDomains,
 	},

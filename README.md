@@ -341,6 +341,13 @@ Page metadata has one source of truth and three thin consumers:
   broken card. The JSON-LD image keeps the original file, so structured data is not limited by the card
   crop.
 
+**Trailing slashes redirect, they are not aliases.** `buildCanonical` never emits a trailing slash, but
+Astro matched a route with or without one, so `/about/` served a second 200 with the same body. Passing
+`trailingSlash: "never"` to `defineConfig` moves the normalisation in front of routing and the route
+cache: a GET is 301'd to the unslashed path (308 for other methods, query string kept), `/_*` internal
+paths and file names are left alone, and EmDash reads the same option for the URLs it generates
+(sitemap, menus, hreflang).
+
 `npm run check:seo <base-url>` asserts all of this against a running deployment (targets discovered
 from `sitemap.xml`), including that article cards are resized derivatives with dimensions. In `astro
 dev`, `/seo-debug?collection=posts&slug=…` dumps the resolved context next to the inputs it came from.

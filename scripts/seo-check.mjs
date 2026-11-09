@@ -14,6 +14,8 @@
  *     og:url === canonical, og:type, og:title, og:site_name, absolute og:image,
  *     og:locale, twitter card + image, theme-color, icon, apple-touch-icon,
  *     parseable JSON-LD, and no stray noindex
+ *   - every page: the trailing-slash spelling is a 301 to the canonical path,
+ *     keeping the query string, instead of a second 200
  *   - article pages: og:type=article, article:published_time, BlogPosting
  *     JSON-LD, and og:image agreeing with the structured-data image
  *   - list/home: og:type=website
@@ -72,6 +74,31 @@ async function fetchPage(path) {
   });
   const body = await response.text();
   return { url, status: response.status, body };
+}
+
+/**
+ * The trailing-slash spelling of a page must redirect, not render a second
+ * 200. Both spellings used to serve the same body; the canonical names only
+ * the unslashed one, so the slashed copy is a duplicate page a crawler can
+ * only resolve by trusting the canonical — and inbound links keep the copy
+ * alive. Asserted as a behaviour (301 + `Location`), not as a config value.
+ */
+async function assertTrailingSlash(scope, path) {
+  const target = new URL(path, origin);
+  if (target.pathname === "/") return;
+  const slashed = new URL(target);
+  slashed.pathname = `${target.pathname}/`;
+
+  const response = await fetch(slashed, {
+    redirect: "manual",
+    headers: { "user-agent": "seo-check" },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  await response.body?.cancel();
+
+  check(scope, "trailing slash redirects", response.status === 301, `${slashed.pathname} → ${response.status}`);
+  const location = response.headers.get("location") ?? "";
+  check(scope, "trailing slash keeps the query", location === `${target.pathname}${target.search}`, location);
 }
 
 function attrValues(tag) {
@@ -386,6 +413,9 @@ for (const target of pages) {
       check(scope, "canonical is self-referential", canonicalPath === target.path, canonicalPath);
     }
   }
+
+  // A missing path has no slashed twin to normalise; every real page does.
+  if (!target.expectStatus) await assertTrailingSlash(scope, target.path);
 }
 
 if (separators.size > 1) {
