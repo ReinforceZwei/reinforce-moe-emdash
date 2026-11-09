@@ -12,7 +12,7 @@
  */
 import type { PluginContext } from "emdash";
 
-import { dayDocId, dayKey, daySpan, entryKey as makeEntryKey, parseEntryKey } from "./lib";
+import { DAY_OFFSET_MS, dayDocId, dayKey, daySpan, entryKey as makeEntryKey, parseEntryKey } from "./lib";
 import type { FacetDim, TotalsRow } from "./store";
 import { collections } from "./store";
 
@@ -103,13 +103,44 @@ export async function readSiteTotals(ctx: PluginContext): Promise<TotalsRow | nu
 	return collections(ctx).totals.get("site");
 }
 
-/** Per-entry / per-path counters, most-viewed first. */
+/**
+ * All-time per-entry counters, most-viewed first.
+ *
+ * Not a period ranking: use `periodCandidates` for anything scoped to the
+ * selected period. This is for surfaces that show all-time numbers.
+ */
 export async function readItemTotals(ctx: PluginContext, limit = 25): Promise<TotalsRow[]> {
 	const { totals } = collections(ctx);
 	const result = await totals.query({
 		where: { scope: "entry" },
 		orderBy: { views: "desc" },
 		limit: Math.min(limit, 100),
+	});
+	return result.items.map((item) => item.data);
+}
+
+/**
+ * Candidate entry rows that had **any** hit since `sinceDay`.
+ *
+ * The period table must not be gated by an all-time ranking: a post published
+ * last week can lead the last seven days while sitting outside the all-time
+ * top 25. `bumpTotals` stamps `updatedAt` on every hit and `totals` declares an
+ * index on it, so "wrote a counter since `sinceDay`" is one indexed range query
+ * and is complete by construction — every entry with period traffic is in it.
+ *
+ * `limit` is the storage API's ceiling: past 100 entries active in one period,
+ * the least recently active fall out of the candidate set. At this site's size
+ * that is unreachable; a per-entry rollup (like `dims`) is the answer if it ever
+ * is not.
+ */
+export async function periodCandidates(ctx: PluginContext, sinceDay: string): Promise<TotalsRow[]> {
+	const { totals } = collections(ctx);
+	// Start of `sinceDay` in the site's day timezone — the inverse of `dayKey`.
+	const sinceMs = Date.parse(`${sinceDay}T00:00:00.000Z`) - DAY_OFFSET_MS;
+	const result = await totals.query({
+		where: { scope: "entry", updatedAt: { gte: sinceMs } },
+		orderBy: { updatedAt: "desc" },
+		limit: 100,
 	});
 	return result.items.map((item) => item.data);
 }
@@ -224,12 +255,14 @@ export async function summary(ctx: PluginContext, period: Period): Promise<Summa
 	const today = dayKey();
 	const windowDays = daySpan(today, period);
 	const previousDays = daySpan(dayKey(new Date(Date.now() - period * 86_400_000)), period);
+	const sinceDay = windowDays[0] ?? today;
 
 	const [series, previousSeries, site, items] = await Promise.all([
 		readDays(ctx, windowDays),
 		readDays(ctx, previousDays),
 		readSiteTotals(ctx),
-		readItemTotals(ctx, 25),
+		// Candidates come from the period, never from an all-time ranking.
+		periodCandidates(ctx, sinceDay),
 	]);
 
 	const window = sumDays(series);
@@ -238,12 +271,10 @@ export async function summary(ctx: PluginContext, period: Period): Promise<Summa
 
 	// Rows are counted for the period, not read from an aggregate: one indexed
 	// `COUNT` per displayed row keeps the table exact across any period length.
-	const sinceDay = windowDays[0] ?? today;
 	const entries: EntryRow[] = [];
 	for (const item of items) {
 		if (!item.entryKey) continue;
 		const visitors = await countVisitsSince(ctx, sinceDay, { entryKey: item.entryKey });
-		if (visitors === 0 && item.views === 0) continue;
 		const { title, path } = await resolveTitle(ctx, item.entryKey);
 		entries.push({
 			entryKey: item.entryKey,
