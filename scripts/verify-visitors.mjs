@@ -341,6 +341,15 @@ async function checkHttp() {
 		JSON.stringify(newTab.json),
 	);
 
+	// A new tab on a page this visitor already read today: not a new visitor, but
+	// still a new visit. The session check must not sit behind the dedupe return.
+	const sameAgain = await post({ p: postPath, r: "", sid: `verify${RUN}d` });
+	assert(
+		"a new tab on an already-read page opens a visit without counting a visitor",
+		sameAgain.json?.ok === true && sameAgain.json?.unique === false && sameAgain.json?.session === true,
+		JSON.stringify(sameAgain.json),
+	);
+
 	// `astro dev` has no proxy, so `requestMeta.ip` is null. That must still
 	// count under the 0.0.0.0 placeholder rather than be dropped.
 	const noIp = await post({ p: postPath, r: "", sid: `verify${RUN}c` }, { "x-forwarded-for": null });

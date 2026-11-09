@@ -330,14 +330,18 @@ export async function recordVisit(ctx: PluginContext, input: RecordVisitInput): 
 	} satisfies VisitRow);
 
 	// Already seen today: the view is counted, the visitor is not.
-	if (!created.applied) return { unique: false, newSession: false };
+	if (created.applied) {
+		await Promise.all([
+			bumpTotals(ctx, "site", siteSeed, { uniques: true }),
+			bumpTotals(ctx, itemId, itemSeed, { uniques: true }),
+			bumpDay(ctx, input.day, { uniques: true }),
+		]);
+	}
 
-	await Promise.all([
-		bumpTotals(ctx, "site", siteSeed, { uniques: true }),
-		bumpTotals(ctx, itemId, itemSeed, { uniques: true }),
-		bumpDay(ctx, input.day, { uniques: true }),
-	]);
-
+	// The session check runs on every hit, not only on the first one: a second
+	// tab that lands on a page this visitor already read today is a new visit
+	// even though it is not a new visitor, and `sessionHash` is per tab per day,
+	// so a repeat hit from the same tab is a compare-and-set that loses.
 	let newSession = false;
 	if (input.sid) {
 		const sessionKey = await sessionHash(input.day, input.sid, input.salt);
@@ -349,7 +353,7 @@ export async function recordVisit(ctx: PluginContext, input: RecordVisitInput): 
 		}
 	}
 
-	return { unique: true, newSession };
+	return { unique: created.applied, newSession };
 }
 
 /** Delete `visits` rows older than the retention window, in bounded batches. */
