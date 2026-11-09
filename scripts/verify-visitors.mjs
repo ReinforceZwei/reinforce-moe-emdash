@@ -188,8 +188,51 @@ async function checkClassification() {
 	assert("a browser is not a bot", !lib.isBot("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"));
 }
 
-// --- 3. HTTP -----------------------------------------------------------------
+// --- 3. Retention ------------------------------------------------------------
 
+async function checkRetention() {
+	console.log("\nRetention");
+	const store = await bundle("src/plugins/visitors/store.ts", "store");
+
+	const fakeCtx = (days) => {
+		const calls = { query: 0, deleted: 0 };
+		return {
+			ctx: {
+				settings: { get: async () => days },
+				storage: {
+					visits: {
+						query: async () => {
+							calls.query += 1;
+							return { items: [{ id: "row-1" }], hasMore: false };
+						},
+						deleteMany: async (ids) => {
+							calls.deleted += ids.length;
+							return ids.length;
+						},
+					},
+				},
+			},
+			calls,
+		};
+	};
+
+	const zero = fakeCtx(0);
+	const keep = await store.retentionDays(zero.ctx);
+	assert("retention 0 means keep forever", keep === 0, `read ${keep}`);
+	assert("retention 0 deletes nothing", (await store.pruneVisits(zero.ctx, keep)) === 0 && zero.calls.query === 0);
+
+	const normal = fakeCtx(400);
+	assert("a stored retention is honoured", (await store.retentionDays(normal.ctx)) === 400);
+	assert("a positive retention prunes", (await store.pruneVisits(normal.ctx, 400)) === 1 && normal.calls.deleted === 1);
+
+	const unset = fakeCtx(undefined);
+	assert("a missing setting falls back to 400", (await store.retentionDays(unset.ctx)) === 400);
+
+	const huge = fakeCtx(99_999);
+	assert("an absurd retention is capped, not obeyed", (await store.retentionDays(huge.ctx)) === 3650);
+}
+
+// --- 4. HTTP -----------------------------------------------------------------
 async function post(body, headers = {}) {
 	const merged = { "content-type": "text/plain", "user-agent": TEST_UA, "x-forwarded-for": TEST_IP, ...headers };
 	// A `null` value removes the header, so a case can simulate a request that
@@ -322,7 +365,7 @@ async function checkHttp() {
 	return { postPath, differentPost };
 }
 
-// --- 4. SQLite ---------------------------------------------------------------
+// --- 5. SQLite ---------------------------------------------------------------
 
 async function checkStorage(context) {
 	console.log("\nStorage");
@@ -442,6 +485,7 @@ console.log(`visitors verify — ${BASE_URL} (db ${DB_PATH}, ip ${TEST_IP})`);
 try {
 	await checkBlocks();
 	await checkClassification();
+	await checkRetention();
 	const context = await checkHttp();
 	await checkStorage(context);
 } catch (error) {

@@ -16,6 +16,7 @@ import type { BlockInteraction, BlockResponse } from "@emdash-cms/blocks";
 import type { RouteContext } from "emdash";
 
 import { normalisePeriod, entryPanel, summary } from "../queries";
+import { retentionDays } from "../store";
 import { entryPanelBlocks, errorBlocks, overviewBlocks, widgetBlocks } from "./blocks";
 import type { SortRequest } from "./blocks";
 
@@ -61,8 +62,8 @@ export async function adminInteraction(ctx: RouteContext): Promise<BlockResponse
 		}
 
 		const period = normalisePeriod(readPeriod(interaction));
-		const data = await summary(ctx, period);
-		return { blocks: overviewBlocks(data, readSort(interaction)) };
+		const [data, retention] = await Promise.all([summary(ctx, period), retentionDays(ctx)]);
+		return { blocks: overviewBlocks(data, readSort(interaction), retention) };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		ctx.log.error("visitors: failed to render admin blocks", { message });

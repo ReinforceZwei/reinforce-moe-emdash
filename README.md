@@ -358,8 +358,11 @@ kind).
 
 Each hit row keeps the **raw IP and the full referrer**, matching WP Statistics. A nightly cron
 (`0 3 * * *`) deletes rows older than the retention window — `retentionDays`, default 400, editable
-on the plugin's settings page — while daily rollups are kept forever. Country is deliberately not
-stored: Google Analytics keeps that (`G-LZ7NMQ1R85` stays permanently), and the admin links to it.
+under **Admin → Plugins → `visitors` → gear**. Setting it to **0 keeps every raw hit forever**, which
+is what a lossless export to another system needs: the log is one row per visitor × page × day
+(~35k rows/year at this site's traffic, so even a decade is tens of MB), at the cost of storing raw
+IPs indefinitely. Daily rollups are never pruned either way. Country is deliberately not stored:
+Google Analytics keeps that (`G-LZ7NMQ1R85` stays permanently), and the admin links to it.
 
 ### Why the numbers differ from GA4
 

@@ -122,11 +122,18 @@ export async function ensureSalt(ctx: PluginContext): Promise<string> {
 	return typeof raced === "string" && raced.length >= 8 ? raced : candidate;
 }
 
-/** Site-wide retention in days, from the plugin's settings schema. */
+/** Site-wide retention in days, from the plugin's settings schema. `0` keeps everything. */
 export async function retentionDays(ctx: PluginContext): Promise<number> {
 	const value = await ctx.settings.get<number>("retentionDays");
-	const days = typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : 400;
-	return Math.max(30, Math.min(days, 730));
+	if (typeof value === "number" && Number.isFinite(value)) {
+		const days = Math.trunc(value);
+		// 0 (or anything negative) disables pruning: every raw hit is kept, which is
+		// what a lossless export to another system needs. Ten years is the ceiling
+		// otherwise — past that the setting is almost certainly a typo.
+		if (days <= 0) return 0;
+		return Math.min(days, 3650);
+	}
+	return 400;
 }
 
 interface BumpFields {
@@ -347,6 +354,9 @@ export async function recordVisit(ctx: PluginContext, input: RecordVisitInput): 
 
 /** Delete `visits` rows older than the retention window, in bounded batches. */
 export async function pruneVisits(ctx: PluginContext, keepDays: number): Promise<number> {
+	// `0` means keep everything — no query, no delete.
+	if (keepDays <= 0) return 0;
+
 	const { visits } = collections(ctx);
 	const cutoff = dayKey(new Date(Date.now() - keepDays * 86_400_000));
 	let removed = 0;

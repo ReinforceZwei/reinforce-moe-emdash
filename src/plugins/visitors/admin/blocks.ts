@@ -176,7 +176,7 @@ function periodMenu(period: Period): Block {
 }
 
 /** The `/visitors` admin page. */
-export function overviewBlocks(summary: Summary, sort: SortRequest = null): Block[] {
+export function overviewBlocks(summary: Summary, sort: SortRequest = null, retention = 400): Block[] {
 	if (summary.allTime.views === 0) {
 		return [
 			{ type: "header", text: "Visitors" },
@@ -276,9 +276,14 @@ export function overviewBlocks(summary: Summary, sort: SortRequest = null): Bloc
 		);
 	}
 
+	const retentionNote =
+		retention === 0
+			? "Raw IP and referrer are kept on every hit indefinitely (retention 0)."
+			: `Raw IP and referrer are kept on every hit for ${retention} days.`;
+
 	blocks.push({
 		type: "context",
-		text: `All time: ${num(summary.allTime.views)} views · ${num(summary.allTime.uniques)} visitors · ${num(summary.allTime.sessions)} visits. Raw IP and referrer are stored on each hit and pruned after the retention window; country lives in Google Analytics.`,
+		text: `All time: ${num(summary.allTime.views)} views · ${num(summary.allTime.uniques)} visitors · ${num(summary.allTime.sessions)} visits. ${retentionNote} Country lives in Google Analytics.`,
 	});
 
 	return blocks;

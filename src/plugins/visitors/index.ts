@@ -210,8 +210,10 @@ export function createPlugin() {
 			cron: async (event, ctx) => {
 				if (event.name !== PRUNE_TASK) return;
 				const keep = await retentionDays(ctx);
+				// `0` = keep every raw hit. Nothing to do, and nothing to log nightly.
+				if (keep === 0) return;
 				const removed = await pruneVisits(ctx, keep);
-				ctx.log.info("visitors: pruned old visit rows", { removed, keepDays: keep });
+				if (removed > 0) ctx.log.info("visitors: pruned old visit rows", { removed, keepDays: keep });
 			},
 		},
 		routes: {
@@ -251,10 +253,11 @@ export function createPlugin() {
 				// are counted like everyone else and the page says so.
 				retentionDays: {
 					type: "number",
-					label: "Keep daily detail (days)",
-					description: "Raw hit rows older than this are deleted nightly. Daily totals are kept forever.",
-					min: 30,
-					max: 730,
+					label: "Keep raw hits (days)",
+					description:
+						"Raw hit rows older than this are deleted nightly; daily totals are kept forever. Set 0 to keep every row (lossless for a future migration) at the cost of storing raw IPs indefinitely.",
+					min: 0,
+					max: 3650,
 					default: 400,
 				},
 			},
