@@ -19,8 +19,9 @@ const MOVED_TO = "https://reinforcezwei.github.io/flippin-platelet";
 export async function onRequest(context: APIContext, next: MiddlewareNext): Promise<Response> {
 	const { pathname, search } = context.url;
 
-	// The landing page at /anone (and its trailing-slash spelling) still renders.
-	if (pathname === MOVED_PREFIX || pathname === `${MOVED_PREFIX}/`) {
+	// The landing page at /anone still renders. Its trailing-slash spelling never reaches here:
+	// `trailingSlash: "never"` in astro.config.mjs normalises it to /anone before middleware runs.
+	if (pathname === MOVED_PREFIX) {
 		return next();
 	}
 
