@@ -1,19 +1,21 @@
 /**
  * Everything the visitors plugin writes, and the document shapes it writes.
  *
- * Counters are split into four collections because they answer different
+ * Counters are split into five collections because they answer different
  * questions at different costs:
  *
  *   visits   one row per visitor × page × day (the raw evidence; prunable)
  *   sessions one row per tab-visit (so views ÷ sessions = pages per visit)
  *   days     per-day rollup, so the chart is one `getMany` and never a scan
  *   totals   monotonic per-entry / per-path / site counters
- *   facets   monthly per-source / per-device / per-kind view counts
+ *   dims     all-time per-source / per-device / per-kind view counts
  *
- * `visits` is the only collection that grows with traffic, and it is the only
- * one that gets pruned. `days`, `totals` and `facets` are aggregates: bounded
- * by the number of days, entries and dimensions respectively, so they are kept
- * forever and the dashboard stays cheap.
+ * `visits` and `sessions` are the only collections that grow with traffic, and
+ * both are pruned: `visits` on the retention setting, `sessions` on a fixed
+ * two-day window because a session hash only ever dedupes inside its own day.
+ * `days`, `totals` and `dims` are aggregates — bounded by the number of days,
+ * entries and dimension values respectively — so they are kept forever and the
+ * dashboard stays cheap.
  *
  * Storage queries in EmDash 1.3 may only filter and sort on *declared* indexes
  * (`storage.<collection>.indexes`), which is why every field queried here also
@@ -101,6 +103,11 @@ const SALT_KEY = "state:salt";
 const PRUNE_TASK = "visitors-prune";
 const PRUNE_BATCH = 100;
 const PRUNE_MAX_BATCHES = 50;
+/**
+ * Days of session rows to keep. A session hash only dedupes inside its own day,
+ * so anything older is dead weight; one extra day absorbs clock skew.
+ */
+const SESSION_KEEP_DAYS = 2;
 
 /**
  * Per-install pepper for the visitor and session hashes.
@@ -356,26 +363,48 @@ export async function recordVisit(ctx: PluginContext, input: RecordVisitInput): 
 	return { unique: created.applied, newSession };
 }
 
-/** Delete `visits` rows older than the retention window, in bounded batches. */
-export async function pruneVisits(ctx: PluginContext, keepDays: number): Promise<number> {
-	// `0` means keep everything — no query, no delete.
-	if (keepDays <= 0) return 0;
-
-	const { visits } = collections(ctx);
-	const cutoff = dayKey(new Date(Date.now() - keepDays * 86_400_000));
+/** Delete rows whose `day` is older than `cutoff`, in bounded batches. */
+async function pruneByDay<T>(collection: StorageCollection<T>, cutoff: string): Promise<number> {
 	let removed = 0;
 
 	for (let batch = 0; batch < PRUNE_MAX_BATCHES; batch += 1) {
-		const page = await visits.query({
+		const page = await collection.query({
 			where: { day: { lt: cutoff } },
 			orderBy: { day: "asc" },
 			limit: PRUNE_BATCH,
 		});
 		if (page.items.length === 0) break;
-		removed += await visits.deleteMany(page.items.map((item) => item.id));
+		removed += await collection.deleteMany(page.items.map((item) => item.id));
 		if (!page.hasMore && page.items.length < PRUNE_BATCH) break;
 	}
 	return removed;
+}
+
+/** Delete `visits` rows older than the retention window. */
+export async function pruneVisits(ctx: PluginContext, keepDays: number): Promise<number> {
+	// `0` means keep everything — no query, no delete.
+	if (keepDays <= 0) return 0;
+
+	const cutoff = dayKey(new Date(Date.now() - keepDays * 86_400_000));
+	return pruneByDay(collections(ctx).visits, cutoff);
+}
+
+/**
+ * Delete session rows from days that can no longer match.
+ *
+ * A session row answers one question — has this tab already been counted
+ * today? — and its id is `sessionHash(day, sid, salt)`: once the day is over,
+ * no hit can ever land on that row again, so without this the collection grows
+ * by one row per tab-visit forever. Yesterday is kept as slack for a clock that
+ * disagrees with the day boundary.
+ *
+ * This runs whatever `retentionDays` says. Retention 0 is a promise about the
+ * raw hit log; a session row holds no IP and no referrer, only a salted hash
+ * and a timestamp, and it is dedupe state rather than history.
+ */
+export async function pruneSessions(ctx: PluginContext): Promise<number> {
+	const cutoff = dayKey(new Date(Date.now() - SESSION_KEEP_DAYS * 86_400_000));
+	return pruneByDay(collections(ctx).sessions, cutoff);
 }
 
 export { PRUNE_TASK };

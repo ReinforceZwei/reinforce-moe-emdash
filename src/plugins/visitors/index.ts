@@ -35,7 +35,7 @@ import {
 	safeJson,
 } from "./lib";
 import { entryKeyForSlug } from "./queries";
-import { ensureSalt, pruneVisits, recordVisit, retentionDays, PRUNE_TASK } from "./store";
+import { ensureSalt, pruneSessions, pruneVisits, recordVisit, retentionDays, PRUNE_TASK } from "./store";
 
 /** Root-relative: the site's own host, whatever it is at runtime. */
 const TRACK_ENDPOINT = "/_emdash/api/plugins/visitors/track";
@@ -209,8 +209,15 @@ export function createPlugin() {
 			},
 			cron: async (event, ctx) => {
 				if (event.name !== PRUNE_TASK) return;
+
+				// Session rows only dedupe inside their own day, so they are pruned
+				// first and regardless of the retention setting — retention 0 is a
+				// promise about the raw hit log, not about this dedupe index.
+				const sessions = await pruneSessions(ctx);
+				if (sessions > 0) ctx.log.info("visitors: pruned old session rows", { removed: sessions });
+
 				const keep = await retentionDays(ctx);
-				// `0` = keep every raw hit. Nothing to do, and nothing to log nightly.
+				// `0` = keep every raw hit. Nothing left to do, and nothing to log nightly.
 				if (keep === 0) return;
 				const removed = await pruneVisits(ctx, keep);
 				if (removed > 0) ctx.log.info("visitors: pruned old visit rows", { removed, keepDays: keep });

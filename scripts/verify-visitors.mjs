@@ -195,22 +195,23 @@ async function checkRetention() {
 	const store = await bundle("src/plugins/visitors/store.ts", "store");
 
 	const fakeCtx = (days) => {
-		const calls = { query: 0, deleted: 0 };
+		const calls = { visitQueries: [], sessionQueries: [], deleted: 0, sessionDeleted: 0 };
+		const fake = (kind) => ({
+			query: async (options) => {
+				if (kind === "visit") calls.visitQueries.push(options.where);
+				else calls.sessionQueries.push(options.where);
+				return { items: [{ id: "row-1" }], hasMore: false };
+			},
+			deleteMany: async (ids) => {
+				if (kind === "visit") calls.deleted += ids.length;
+				else calls.sessionDeleted += ids.length;
+				return ids.length;
+			},
+		});
 		return {
 			ctx: {
 				settings: { get: async () => days },
-				storage: {
-					visits: {
-						query: async () => {
-							calls.query += 1;
-							return { items: [{ id: "row-1" }], hasMore: false };
-						},
-						deleteMany: async (ids) => {
-							calls.deleted += ids.length;
-							return ids.length;
-						},
-					},
-				},
+				storage: { visits: fake("visit"), sessions: fake("session") },
 			},
 			calls,
 		};
@@ -219,7 +220,7 @@ async function checkRetention() {
 	const zero = fakeCtx(0);
 	const keep = await store.retentionDays(zero.ctx);
 	assert("retention 0 means keep forever", keep === 0, `read ${keep}`);
-	assert("retention 0 deletes nothing", (await store.pruneVisits(zero.ctx, keep)) === 0 && zero.calls.query === 0);
+	assert("retention 0 deletes nothing", (await store.pruneVisits(zero.ctx, keep)) === 0 && zero.calls.visitQueries.length === 0);
 
 	const normal = fakeCtx(400);
 	assert("a stored retention is honoured", (await store.retentionDays(normal.ctx)) === 400);
@@ -230,6 +231,25 @@ async function checkRetention() {
 
 	const huge = fakeCtx(99_999);
 	assert("an absurd retention is capped, not obeyed", (await store.retentionDays(huge.ctx)) === 3650);
+
+	// Session rows dedupe inside one day, so their window is fixed and does not
+	// follow `retentionDays` — retention 0 promises the raw hit log, not this.
+	const forever = fakeCtx(0);
+	assert(
+		"sessions are pruned even when raw hits are kept",
+		(await store.pruneSessions(forever.ctx)) === 1 && forever.calls.sessionDeleted === 1,
+	);
+	assert("session pruning leaves the hit log alone", forever.calls.visitQueries.length === 0);
+	const sessionCutoff = forever.calls.sessionQueries[0]?.day?.lt;
+	assert(
+		"the session cutoff is in the past and recent",
+		typeof sessionCutoff === "string" && sessionCutoff <= new Date().toISOString().slice(0, 10),
+		String(sessionCutoff),
+	);
+
+	const visitsOnly = fakeCtx(400);
+	await store.pruneVisits(visitsOnly.ctx, 400);
+	assert("visit pruning leaves sessions alone", visitsOnly.calls.sessionQueries.length === 0);
 }
 
 // --- 4. HTTP -----------------------------------------------------------------
