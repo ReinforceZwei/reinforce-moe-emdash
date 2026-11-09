@@ -70,7 +70,7 @@ function trend(windowViews: number, previousViews: number, period: Period): { tr
 }
 
 function statsBlock(summary: Summary): Block {
-	const { window, previous, allTime, period } = summary;
+	const { window, previous, period } = summary;
 	const viewsTrend = trend(window.views, previous.views, period);
 	const perVisit = window.sessions > 0 ? window.views / window.sessions : 0;
 
