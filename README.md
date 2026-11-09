@@ -342,6 +342,10 @@ and there is no React bundle to keep in step with EmDash's host-only peers.
 - Day boundary is 00:00 Asia/Taipei. Bots are dropped by user agent. A path that is not home, an
   entry or a known listing is dropped rather than attributed (no 404 counting). Admin pages never
   carry the beacon. Signed-in editors are counted like everyone else — there is no opt-out.
+- The client IP comes from `requestMeta`: `cf-connecting-ip` on Cloudflare, otherwise the declared
+  `trustedProxyHeaders` (`x-forwarded-for`, which Traefik sets). **`astro dev` has no proxy in front
+  of it, so a local hit arrives with `ip: null` and is counted under `0.0.0.0`** — numbers appear,
+  but every browser shares one identity, so a local session shows one visitor per user agent.
 - Counting happens in the browser, not in the fragment hook: public pages are route-cached for 24 h,
   so a hook-side counter would only ever see cache misses.
 

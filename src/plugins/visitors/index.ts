@@ -41,6 +41,21 @@ import { ensureSalt, pruneVisits, recordVisit, retentionDays, PRUNE_TASK } from 
 const TRACK_ENDPOINT = "/_emdash/api/plugins/visitors/track";
 const TRACK_PATH_PREFIX = "/_emdash/";
 
+/**
+ * Identity used when the request carries no client IP.
+ *
+ * `requestMeta.ip` is header-only: `cf-connecting-ip` on Workers, otherwise the
+ * operator-declared trusted proxy headers (`x-forwarded-for` here). `astro dev`
+ * has no proxy in front of it, so it reports `null` — dropping those hits would
+ * make the plugin look broken locally while production worked. Counting under a
+ * shared placeholder keeps local numbers (and any misconfigured deployment)
+ * working, at the cost of a coarser visitor key: IP + UA collapse to UA only.
+ */
+const UNKNOWN_IP = "0.0.0.0";
+
+/** One warning per process, not one per beacon. */
+let warnedMissingIp = false;
+
 /** Paths that must never carry a beacon. */
 function shouldInject(path: string): boolean {
 	// Admin, API and setup routes: `page:fragments` is only called for public
@@ -82,8 +97,19 @@ async function track(ctx: RouteContext): Promise<Record<string, unknown>> {
 		const path = normalisePath(body.p);
 		if (!path) return { ok: true, skipped: "path" };
 
-		const { ip, userAgent } = ctx.requestMeta;
-		if (!ip || !userAgent) return { ok: true, skipped: "meta" };
+		const { ip: reportedIp, userAgent } = ctx.requestMeta;
+		// A missing user agent is a scripted client claiming to render nothing —
+		// there is no useful fallback for it. A missing IP is different: it just
+		// means no trusted proxy header, which is every local `astro dev` request.
+		if (!userAgent) return { ok: true, skipped: "meta" };
+
+		const ip = reportedIp ?? UNKNOWN_IP;
+		if (!reportedIp && !warnedMissingIp) {
+			warnedMissingIp = true;
+			ctx.log.warn("visitors: no client IP on the request; counting under 0.0.0.0", {
+				hint: "client IPs come from trustedProxyHeaders (x-forwarded-for) or CF-Connecting-IP. `astro dev` has neither.",
+			});
+		}
 		if (isBot(userAgent)) return { ok: true, skipped: "bot" };
 
 		const route = classifyPath(path);

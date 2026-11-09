@@ -191,9 +191,15 @@ async function checkClassification() {
 // --- 3. HTTP -----------------------------------------------------------------
 
 async function post(body, headers = {}) {
+	const merged = { "content-type": "text/plain", "user-agent": TEST_UA, "x-forwarded-for": TEST_IP, ...headers };
+	// A `null` value removes the header, so a case can simulate a request that
+	// arrived without a trusted proxy header (which is what `astro dev` sees).
+	for (const [key, value] of Object.entries(merged)) {
+		if (value === null) delete merged[key];
+	}
 	const response = await fetch(`${BASE_URL}/_emdash/api/plugins/visitors/track`, {
 		method: "POST",
-		headers: { "content-type": "text/plain", "user-agent": TEST_UA, "x-forwarded-for": TEST_IP, ...headers },
+		headers: merged,
 		body: typeof body === "string" ? body : JSON.stringify(body),
 	});
 	const text = await response.text();
@@ -290,6 +296,15 @@ async function checkHttp() {
 		"a new tab opens a new visit",
 		newTab.json?.ok === true && newTab.json?.unique === true && newTab.json?.session === true,
 		JSON.stringify(newTab.json),
+	);
+
+	// `astro dev` has no proxy, so `requestMeta.ip` is null. That must still
+	// count under the 0.0.0.0 placeholder rather than be dropped.
+	const noIp = await post({ p: postPath, r: "", sid: `verify${RUN}c` }, { "x-forwarded-for": null });
+	assert(
+		"a hit with no proxy IP still counts",
+		noIp.json?.ok === true && noIp.json?.unique === true,
+		JSON.stringify(noIp),
 	);
 
 	const bot = await post({ p: postPath, r: "" }, { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" });
