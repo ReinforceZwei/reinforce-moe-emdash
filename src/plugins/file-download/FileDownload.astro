@@ -1,0 +1,202 @@
+---
+/**
+ * Public renderer for the `attachment` Portable Text block (file-download
+ * plugin). Registered as `blockComponents.attachment` in ./astro.ts.
+ *
+ * The block stores the media picker's URL string (site-relative for local
+ * media, e.g. `/_emdash/api/media/file/<storageKey>`). Block values are not
+ * validated by the host on save, so the URL is checked here before it reaches
+ * an href: https or a site-relative path, nothing else.
+ *
+ * The media route names stored objects `<ulid>.pdf`, so the URL basename is a
+ * useless download name — the `download` attribute is built from the link text
+ * instead, keeping the extension from the URL.
+ */
+interface AttachmentNode {
+  _type?: "attachment";
+  _key?: string;
+  file?: string;
+  label?: string;
+  description?: string;
+}
+
+interface Props {
+  node: AttachmentNode;
+}
+
+const node = Astro.props.node ?? {};
+
+const HREF_RE = /^(?:https:\/\/|\/(?!\/))/i;
+
+function safeHref(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const url = value.trim();
+  return url && HREF_RE.test(url) ? url : null;
+}
+
+function decode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+const href = safeHref(node.file);
+const urlPath = href ? href.split(/[?#]/)[0] : "";
+const basename = urlPath.split("/").pop() ?? "";
+const extension = /(\.[a-z0-9]{2,5})$/i.exec(basename)?.[1] ?? "";
+const fileType = extension.slice(1).toUpperCase();
+
+const label = typeof node.label === "string" ? node.label.trim() : "";
+const displayName = label || decode(basename) || "Download file";
+const description =
+  typeof node.description === "string" && node.description.trim()
+    ? node.description.trim()
+    : "";
+
+// `download` attr: strip characters a filesystem rejects and a trailing type
+// parenthetical ("Report (PDF)" reads well as link text, less well as a file
+// name), then append the URL's extension unless the name already carries it.
+const safeName = displayName.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").trim();
+const typeParen = fileType
+  ? new RegExp(`\\s*[(\\[（【]\\s*${fileType}\\s*[)\\]）】]\\s*$`, "i")
+  : null;
+const withoutType = typeParen ? safeName.replace(typeParen, "").trim() : safeName;
+const download =
+  withoutType && extension && !withoutType.toLowerCase().endsWith(extension.toLowerCase())
+    ? `${withoutType}${extension}`
+    : withoutType;
+---
+
+{
+  href && (
+    <a class="file-download" href={href} download={download || undefined}>
+      <svg
+        class="file-download__icon"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+      <span class="file-download__text">
+        <span class="file-download__name">{displayName}</span>
+        {description && <span class="file-download__description">{description}</span>}
+      </span>
+      <span class="file-download__action" aria-hidden="true">
+        {fileType && <span class="file-download__type">{fileType}</span>}
+        <svg
+          class="file-download__arrow"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </span>
+      <span class="file-download__sr">(download)</span>
+    </a>
+  )
+}
+
+<style>
+  .file-download {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width) solid var(--color-surface);
+    border-radius: var(--radius-md);
+    background: var(--color-quote-bg);
+    color: var(--color-text);
+    text-decoration: none;
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .file-download:hover {
+    border-color: var(--color-surface-strong);
+  }
+
+  .file-download:focus-visible {
+    outline: 2px solid var(--color-surface-strong);
+    outline-offset: 2px;
+  }
+
+  .file-download__icon {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--color-surface-strong);
+  }
+
+  .file-download__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .file-download__name {
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .file-download__description {
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .file-download__action {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-strong);
+    color: var(--color-on-strong);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: background-color 120ms ease;
+  }
+
+  .file-download:hover .file-download__action {
+    background: var(--color-surface-strong-hover);
+  }
+
+  .file-download__arrow {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .file-download__sr {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>
