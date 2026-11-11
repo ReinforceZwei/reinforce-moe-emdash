@@ -12,9 +12,8 @@ if (!slug) return Astro.rewrite("/404");
 
 const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
 if (!post) {
-	// A partial slug — a share or crawler that dropped the percent-encoded CJK
-	// tail — 301s to the post it can only mean, the way WordPress's permalink
-	// guess did. An ambiguous prefix still 404s.
+	// If a truncated slug uniquely identifies a post, redirect to its full
+	// permalink, as WordPress does. Ambiguous prefixes still return 404.
 	const guessed = await guessPostSlug(slug);
 	if (guessed) return Astro.redirect(`/blog/${encodeURIComponent(guessed)}`, 301);
 	return Astro.rewrite("/404");
@@ -28,9 +27,7 @@ const [categoryTerms, tagTerms] = await Promise.all([
 ]);
 const terms = splitTerms(categoryTerms, tagTerms);
 
-// A post is an article: og:type, article:* tags and BlogPosting JSON-LD all
-// follow from here. The featured image is the social image unless the SEO
-// panel overrides it (resolveSeo applies that precedence).
+// og:image falls back to featured image if post SEO image is not set
 const featured = resolvePostImage(post, Astro.locals.emdash?.getPublicMediaUrl);
 
 const seo = await resolveSeo({

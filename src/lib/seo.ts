@@ -151,10 +151,6 @@ function toIsoTime(value: unknown): string | null {
 
 /**
  * `zh-Hant` → `zh_TW` for `og:locale`.
- *
- * Open Graph expects `language_TERRITORY`; a script subtag is not valid there,
- * and omitting the territory (`zh`) tells scrapers nothing about which Chinese.
- * Script→region is the only faithful mapping available without a locale table.
  */
 const OG_SCRIPT_REGIONS: Record<string, string> = { hant: "TW", hans: "CN" };
 
