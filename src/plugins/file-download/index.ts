@@ -21,6 +21,12 @@
  *     "label": "Download the report (PDF)",
  *     "description": "2025 annual results" }
  *
+ * A library file is not always the source: `url` holds a direct link on
+ * another host (a file share, a release artifact, a vendor PDF) and wins when
+ * both are set. The media picker cannot express that — its "From URL" source
+ * is hidden for a non-image MIME filter — and the host offers no free-form URL
+ * field, so this is a plain text input the renderer validates (https only).
+ *
  * `attachment` deliberately does not reuse the core `file` block type: that
  * one is the WordPress-import block (emdash/src/components/File.astro), and a
  * plugin renderer for `file` would override it for imported content too.
@@ -39,7 +45,7 @@ export function createPlugin() {
           // No dedicated file icon in the editor's icon map (video, code,
           // link, link-external, form); "link" is the closest.
           icon: "link",
-          description: "Attach a PDF from the Media Library",
+          description: "Attach a PDF from the Media Library or a direct link",
           // The default category is "Embeds"; this belongs with the other
           // media blocks.
           category: "Media",
@@ -53,6 +59,14 @@ export function createPlugin() {
               // allowlist accepts (GLOBAL_UPLOAD_ALLOWLIST).
               mime_type_filter: "application/pdf",
               placeholder: "/_emdash/api/media/file/…",
+            },
+            {
+              // A direct link on another host. Wins over the picked file, so
+              // the label says so; the renderer only accepts https.
+              type: "text_input",
+              action_id: "url",
+              label: "Direct link (overrides the file)",
+              placeholder: "https://example.com/files/report.pdf",
             },
             {
               type: "text_input",

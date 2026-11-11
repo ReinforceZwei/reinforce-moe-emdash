@@ -3,19 +3,23 @@
  * Public renderer for the `attachment` Portable Text block (file-download
  * plugin). Registered as `blockComponents.attachment` in ./astro.ts.
  *
- * The block stores the media picker's URL string (site-relative for local
- * media, e.g. `/_emdash/api/media/file/<storageKey>`). Block values are not
- * validated by the host on save, so the URL is checked here before it reaches
- * an href: https or a site-relative path, nothing else.
+ * The block stores either a Media Library URL (site-relative, e.g.
+ * `/_emdash/api/media/file/<storageKey>`) or a direct file link on another
+ * host (`url`, which wins when both are set). Block values are not validated
+ * by the host on save, so the URL is checked here before it reaches an href:
+ * https or a site-relative path, nothing else.
  *
- * The media route names stored objects `<ulid>.pdf`, so the URL basename is a
- * useless download name — the `download` attribute is built from the link text
- * instead, keeping the extension from the URL.
+ * The media route names stored objects `<ulid>.pdf`, and a direct link often
+ * ends in a token or a generic path, so neither basename is a reliable
+ * download name — the `download` attribute is built from the link text. For
+ * cross-origin links browsers ignore that attribute and take the filename
+ * from the response headers, which is what makes a direct link work as-is.
  */
 interface AttachmentNode {
   _type?: "attachment";
   _key?: string;
   file?: string;
+  url?: string;
   label?: string;
   description?: string;
 }
@@ -26,6 +30,8 @@ interface Props {
 
 const node = Astro.props.node ?? {};
 
+// Blocks values are not validated by the host on save: accept only https or a
+// site-relative path before anything reaches an href.
 const HREF_RE = /^(?:https:\/\/|\/(?!\/))/i;
 
 function safeHref(value: unknown): string | null {
@@ -42,18 +48,47 @@ function decode(value: string): string {
   }
 }
 
-const href = safeHref(node.file);
+// A direct link (another host) wins over a picked library file.
+const href = (() => {
+  const direct = safeHref(node.url);
+  return direct ?? safeHref(node.file);
+})();
+
 const urlPath = href ? href.split(/[?#]/)[0] : "";
 const basename = urlPath.split("/").pop() ?? "";
 const extension = /(\.[a-z0-9]{2,5})$/i.exec(basename)?.[1] ?? "";
-const fileType = extension.slice(1).toUpperCase();
 
 const label = typeof node.label === "string" ? node.label.trim() : "";
-const displayName = label || decode(basename) || "Download file";
+// No link text: a real file name is a better title than a token or a verb, and
+// anything else reads better as the host it downloads from.
+const GENERIC_BASENAME_RE = /^(?:download|file|index|get|open|view|attachment)$/i;
+const hasFilename = !!extension && !GENERIC_BASENAME_RE.test(basename);
+
+function hostOf(url: string): string {
+  if (!/^https:\/\//i.test(url)) return "";
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
+}
+
+const host = href ? hostOf(href) : "";
+const displayName =
+  label ||
+  (hasFilename ? decode(basename) : "") ||
+  (host ? `Download from ${host}` : "Download file");
 const description =
   typeof node.description === "string" && node.description.trim()
     ? node.description.trim()
     : "";
+
+// A direct link usually has no file extension in its path (a `/download` path,
+// a token), so the type comes from the link text's trailing parenthetical.
+const LABEL_TYPE_RE = /[(（[]\s*([a-z0-9]{2,5})\s*[)）\]]\s*$/i;
+const fileType = (
+  extension ? extension.slice(1) : (LABEL_TYPE_RE.exec(label)?.[1] ?? "")
+).toUpperCase();
 
 // `download` attr: strip characters a filesystem rejects and a trailing type
 // parenthetical ("Report (PDF)" reads well as link text, less well as a file
