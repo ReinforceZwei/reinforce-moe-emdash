@@ -226,6 +226,14 @@ export default defineConfig({
 			// derivative. It has to be a plugin rather than layout code: EmDashHead re-derives
 			// og:image from the SEO panel on every content page, and plugin contributions are
 			// resolved before those defaults, so this is the only layer that can win.
+			//
+			// `file-download` (site-local, src/plugins/file-download) adds the `attachment`
+			// Portable Text block: a slash-menu entry whose modal picks a PDF from the Media
+			// Library, and a download card on the public site. EmDash has no attachment block,
+			// and the editor's link popover takes a URL by hand — this is the only way to put a
+			// picker in front of authors. `componentsEntry` is native-only: the host imports
+			// `blockComponents` from it at build time and merges the renderers into
+			// `<PortableText>`.
 			plugins: [
 				emdashSmtp(),
 				{
@@ -233,6 +241,13 @@ export default defineConfig({
 					version: "1.0.0",
 					format: "native",
 					entrypoint: "/src/plugins/og-image/index.ts",
+				},
+				{
+					id: "file-download",
+					version: "1.0.0",
+					format: "native",
+					entrypoint: "/src/plugins/file-download/index.ts",
+					componentsEntry: "/src/plugins/file-download/astro.ts",
 				},
 			],
 		}),
