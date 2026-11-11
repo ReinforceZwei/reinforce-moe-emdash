@@ -8,31 +8,16 @@ import { emdashSmtp } from "emdash-smtp";
 import { sqlite } from "emdash/db";
 import { loadEnv } from "vite";
 
-// Astro only reads `.env` files *after* it has evaluated this file, so `process.env` is empty
-// here and nothing that `emdash()` reads from the environment (`S3_*`, `EMDASH_*`) is set when
-// the site runs via `astro dev` on a machine without exported vars — the middleware then fails
-// with MISSING_S3_CONFIG. Read the dotenv files ourselves and push them into `process.env` so
-// both this config and the server it starts see them.
-//
-// Real environment variables always win (container/compose supplies them via `env_file:`), and
-// `.env*` is in .dockerignore, so an image build never bakes them in.
+// Load dotenv files before `emdash()` reads configuration; exported variables take precedence.
+// `.env*` is ignored by Docker, so secrets are not baked into images.
 const mode = process.env.NODE_ENV ?? "production";
 for (const [key, value] of Object.entries(loadEnv(mode, process.cwd(), ""))) {
 	if (process.env[key] === undefined) process.env[key] = value;
 }
 
-// SQLite lives on a mounted directory so the -wal/-shm files sit beside it. The path is
-// overridable for local dev (`EMDASH_DB_PATH=./data/emdash.db`), and the directory is created
-// here because SQLite creates the database file but never its parent directory — a fresh clone
-// has no data/ and the first request would fail with ERR_SQLITE_ERROR 14.
 const databasePath = path.resolve(process.env.EMDASH_DB_PATH || "/app/data/emdash.db");
 
-// Sessions (how a signed-in admin stays signed in) live beside the database. Without an
-// explicit driver @astrojs/node configures `<cacheDir>/sessions`, i.e.
-// /app/node_modules/.astro/sessions — inside the image layer, not the mounted volume — so
-// every container recreate (`docker compose up -d`, every image update) discards them and
-// the admin comes back with a 401. Pinning the base keeps sessions across deploys; the
-// path follows the database so `npm run dev` outside Docker works too.
+// Keep sessions beside the database so container recreates don't discard them.
 const sessionPath = path.resolve(
 	process.env.EMDASH_SESSION_PATH || path.join(path.dirname(databasePath), "sessions"),
 );
@@ -48,23 +33,12 @@ try {
 	);
 }
 
-// Media stays on S3 (Cloudflare R2), configured through S3_* environment vars.
-//
-// Reverse proxy (Traefik terminates TLS, forwards Host / X-Forwarded-Host / X-Forwarded-Proto).
-// Astro only *reflects* those forwarded headers for hosts listed in `security.allowedDomains`, so
-// that list is what makes `Astro.url` report the public origin instead of the internal
-// `http://localhost:4321`; without it every canonical, `og:url` and absolute link built from the
-// request advertises a host nobody can reach (this reached production once, as `localhost`
-// canonicals while Traefik was forwarding the correct headers).
-//
 // The list is evaluated at build time and cannot come from a runtime variable, so the public host
 // is a literal here — a rebuild is what a domain move needs. `siteUrl` itself is deliberately *not*
 // set in this config: EmDash reads EMDASH_SITE_URL (then SITE_URL) at request time.
 const PUBLIC_HOST = "reinforce.moe";
 const allowedDomains = [
 	{ hostname: PUBLIC_HOST, protocol: "https" },
-	// Plain-HTTP requests are allowed too (probe/health checks, a proxy hop that keeps http on the
-	// inside); a host that is not listed is not rejected, its forwarded headers are just ignored.
 	{ hostname: PUBLIC_HOST, protocol: "http" },
 ];
 
@@ -86,20 +60,12 @@ export default defineConfig({
 	adapter: node({
 		mode: "standalone",
 	}),
-	// Canonical URLs never end in a slash (`buildCanonical` in src/lib/seo.ts strips it), but
-	// Astro matches routes whether or not one is present, so `/about/` rendered the same 200 as
-	// `/about` — two URLs for one page, and a crawler has to trust the canonical to tell them
-	// apart. `"never"` puts the normalisation in front of routing and the route cache: a GET is
-	// 301'd, any other method 308'd, the query string is kept, and `/_*` internal paths and a
-	// file name are left alone. EmDash reads the same option for the URLs it generates (sitemap,
-	// menus, hreflang), so links it emits match the canonical too.
 	trailingSlash: "never",
 	security: {
 		allowedDomains,
 	},
 	vite: {
 		server: {
-			// The dev-server counterpart of the same check, so `astro dev` accepts a proxied Host.
 			allowedHosts: [PUBLIC_HOST, "localhost"],
 		},
 	},
@@ -112,35 +78,13 @@ export default defineConfig({
 		layout: "constrained",
 		responsiveStyles: true,
 	},
-	// Route cache: stores the *rendered response* per URL, so a hit skips EmDash, SQLite and
-	// Astro entirely. `memoryCache()` here is Astro's provider (`astro/config`), not EmDash's
-	// object-cache adapter of the same name — it keeps entries inside this Node process, which
-	// is the whole deployment (one standalone server, no CDN in front).
-	//
-	// `max` bounds the LRU in entries, and image responses share it with HTML, so the size is
-	// really a memory budget: ~1000 entries of mixed HTML (~40 KB) and WebP/AVIF (~100 KB) can
-	// approach 100 MB, and nothing above the default Node heap applies here (the app service
-	// sets no mem_limit). 600 keeps the worst case near 60 MB.
-	//
-	// The cache key is the URL plus its query string (sorted, tracking params dropped by
-	// default), so `/_image?href=…&w=640` and `&w=1280` are separate entries as they must be.
 	cache: {
 		provider: routeMemoryCache({ max: 600 }),
 	},
 	// Which paths may be cached, for how long, and under which tags. Rules match by *path*,
 	// the same `[param]` / `[...rest]` syntax as the file router, and they are independent of
 	// the routes that actually exist — so a rule that is too broad silently covers routes it
-	// was never meant for. That is why every public path is listed explicitly instead of using
-	// a catch-all: `/[...slug]` would also match `/_emdash/api/...` and cache admin responses.
-	//
-	// Tags are the invalidation channel: EmDash's content API purges `[collection, id]` on
-	// publish/unpublish/delete, so tagging a route with the collection name it renders means a
-	// publish shows up within seconds even though `maxAge` is a day. The per-entry tags come
-	// from the `cacheHint` each page's frontmatter passes to `Astro.cache.set()` — the ids of
-	// the entries it rendered — and they merge into the rule's tags.
-	//
-	// `maxAge` also bounds how stale a failed invalidation can leave a page, and one stale
-	// response is served while `swr` refetches in the background.
+	// was never meant for.
 	//
 	// The `emdash:*` entries are EmDash's chrome tags, and they are listed here rather than
 	// left to the `cacheHint`s the layout passes to `Astro.cache.set()` — because those hints
@@ -184,56 +128,16 @@ export default defineConfig({
 		react(),
 		emdash({
 			database: sqlite({ url: `file:${databasePath}` }),
-			// Object cache: keeps query results (content reads, site settings, menus, taxonomy
-			// terms, widgets) across requests so a render does not hit SQLite for every lookup.
-			// Writes bump the namespace epoch, so a publish invalidates the affected queries
-			// instead of waiting out `defaultTtl` — the TTL is only a backstop that reclaims
-			// keys nobody read again. In-process, like the route cache above.
-			//
-			// With the route cache on, this layer does less for anonymous traffic than it
-			// might look: a render that refills an invalidated route deliberately skips the
-			// object cache and reads the database, so it cannot rebuild a page from an older
-			// snapshot. What it buys is signed-in editors, previews and the admin.
 			objectCache: objectMemoryCache({
 				defaultTtl: 3_600,
 				maxEntries: 1_000,
 			}),
-			// `siteUrl` is deliberately not set here: EmDash falls back to EMDASH_SITE_URL (then
-			// SITE_URL) at runtime, so the image stays portable across environments.
-			// Traefik writes X-Forwarded-For; trusting it lets the auth and comment rate limits count
-			// per real client IP instead of lumping every visitor into one bucket. Safe here because
-			// the app is only reachable through the proxy.
 			trustedProxyHeaders: ["x-forwarded-for"],
-			// Redirects the redirect table cannot express. Its destinations must be site-relative,
-			// so a move to another host (/anone -> GitHub Pages) is served by this outer
-			// middleware instead; it runs before EmDash's own middleware and before the database
-			// is opened, and is evaluated at build time, so changing it means a rebuild.
 			middleware: { outer: "./src/site-redirects.ts" },
-			// The media base must be known at build time — EmDash bakes image.remotePatterns from
-			// it and Astro refuses every host it does not authorise, falling back to a plain,
-			// unoptimised <img>. It also has to match the bucket S3_* uploads into, or media the
-			// site stores is served from a host that does not have it (404). Hence: env first
-			// (`.env` is loaded above), production domain as the default.
+			// The media base must be known at build time for Astro remote image optimisation to work
 			storage: import.meta.env.PROD
 			  ? s3({ publicUrl: process.env.S3_PUBLIC_URL || "https://media.reinforce.moe" })
 				: local({ directory: "./uploads", baseUrl: "/_emdash/api/media/file" }),
-			// Email delivery (magic links, invites, account recovery). The provider
-			// credentials are plugin settings stored in the database — enter the API key on
-			// the plugin's admin page — and exactly one provider delivers at a time, so pick
-			// it under Settings → Email. Without a provider, invites must be copied by hand.
-			//
-			// `og-image` (site-local, src/plugins/og-image) rewrites og:image to a resized
-			// derivative. It has to be a plugin rather than layout code: EmDashHead re-derives
-			// og:image from the SEO panel on every content page, and plugin contributions are
-			// resolved before those defaults, so this is the only layer that can win.
-			//
-			// `file-download` (site-local, src/plugins/file-download) adds the `attachment`
-			// Portable Text block: a slash-menu entry whose modal picks a PDF from the Media
-			// Library, and a download card on the public site. EmDash has no attachment block,
-			// and the editor's link popover takes a URL by hand — this is the only way to put a
-			// picker in front of authors. `componentsEntry` is native-only: the host imports
-			// `blockComponents` from it at build time and merges the renderers into
-			// `<PortableText>`.
 			plugins: [
 				emdashSmtp(),
 				{
