@@ -43,6 +43,10 @@ docker compose run --rm --no-deps -v "$PWD/backfill:/backfill:ro" app \
 - `--apply` first writes `pre-site-stats-backfill-<timestamp>.db` (`VACUUM INTO`) next to the database,
   i.e. in `./data/` on the host. Delete it once you are happy.
 - Only days **before the first live day** are imported, so nothing is counted twice.
+- Requires the monthly-rollup release (#45). Whole months go straight into the rollup
+  (`pagesm`/`dimsm` plus a `rollup:YYYY-MM` marker); per-day page/dim rows are written only for the
+  last 400 days and for the month the live data starts in, which the plugin rolls up itself when
+  that month ends. Refuses to run if that month was already rolled up.
 - Imported rows carry `seed: 1`. A ledger row (`totals/backfill`) records exactly what was added to
   the all-time totals.
 
@@ -58,7 +62,7 @@ docker compose run --rm --no-deps -v "$PWD/backfill:/backfill:ro" app \
   node /backfill/backfill-site-stats.mjs --rollback
 ```
 
-Deletes every `seed: 1` row and subtracts the ledger from the totals, leaving live counts untouched
+Deletes every `seed: 1` row (including rollup rows and markers) and subtracts the ledger from the totals, leaving live counts untouched
 (verified: the plugin storage is byte-identical to its pre-import state). If anything looks wrong
 beyond that, stop the app and copy the `pre-site-stats-backfill-*.db` file over `emdash.db`
 (delete any `-wal`/`-shm` files first).

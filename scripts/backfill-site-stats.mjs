@@ -9,7 +9,11 @@
  * - Dry run by default. `--apply` writes; `--rollback` undoes a previous `--apply`.
  * - `--apply` first takes a consistent `VACUUM INTO` copy next to the database (or `--backup-dir`).
  * - Only days before the first day the plugin counted live are imported, so nothing is counted twice.
- * - Imported day/page/dim rows carry `seed: 1`; the all-time totals are incremented atomically and
+ * - History is written the way the monthly rollup stores it: whole months go straight into
+ *   `pagesm`/`dimsm` with a `rollup:YYYY-MM` marker (so long ranges read fast), and per-day page/dim
+ *   rows are kept only for the last 400 days and for a month that is still open (the live
+ *   compaction rolls that month up later). `days` rows are written for every day.
+ * - Imported rows carry `seed: 1`; the all-time totals are incremented atomically and
  *   the exact amounts are kept in a ledger row (`totals/backfill`), so rollback subtracts exactly
  *   what was added. A second `--apply` is refused while a ledger exists.
  * - Safe beside the running site: one short write transaction, WAL, 30 s busy timeout.
@@ -20,6 +24,11 @@ import { DatabaseSync } from "node:sqlite";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+
+const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+const monthOf = (day) => day.slice(0, 7);
+const monthEnd = (m) => { const [y, mo] = m.split("-").map(Number); return addDays(new Date(Date.UTC(y, mo, 1)).toISOString().slice(0, 10), -1); };
+const DAY_ROWS_KEPT = 400; // days of per-day page/dim rows kept: covers the longest range (365d) plus its edge month
 
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(n);
@@ -50,7 +59,7 @@ if (ROLLBACK) {
 	db.exec("BEGIN IMMEDIATE");
 	try {
 		const del = (c) => db.prepare("delete from _plugin_storage where plugin_id = ? and collection = ? and json_extract(data, '$.seed') = 1").run(PLUGIN, c).changes;
-		const removed = { days: del("days"), pages: del("pages"), dims: del("dims") };
+		const removed = Object.fromEntries(["days", "pages", "dims", "pagesm", "dimsm", "totals"].map((c) => [c, del(c)])); // totals: the rollup markers
 		const dec = db.prepare("update _plugin_storage set data = json_set(data, '$.views', coalesce(json_extract(data, '$.views'), 0) - cast(? as integer)) where plugin_id = ? and collection = 'totals' and id = ?");
 		db.prepare("update _plugin_storage set data = json_set(data, '$.views', coalesce(json_extract(data, '$.views'), 0) - cast(? as integer), '$.uniques', coalesce(json_extract(data, '$.uniques'), 0) - cast(? as integer)) where plugin_id = ? and collection = 'totals' and id = 'site'").run(L.site.views, L.site.uniques, PLUGIN);
 		for (const [key, views] of Object.entries(L.entries)) dec.run(views, PLUGIN, `e:${key}`);
@@ -93,15 +102,34 @@ for (const p of agg.pages) {
 	pageRows.set(`${p.day}|${key}`, (pageRows.get(`${p.day}|${key}`) ?? 0) + p.views);
 }
 const days = agg.days.filter((d) => keep(d.day));
-const dims = agg.dims.filter((d) => keep(d.day));
+const dimsAll = agg.dims.filter((d) => keep(d.day));
 const entries = {};
 for (const [k, v] of pageRows) { const key = k.slice(k.indexOf("|") + 1); entries[key] = (entries[key] ?? 0) + v; }
 const site = { views: sum(days, (d) => d.views), uniques: sum(days, (d) => d.uniques) };
 
+
+// A month goes into the rollup when the import covers all of it; the month the live data starts in
+// (or the aggregate ends in) stays per-day and is rolled up later by the plugin.
+const lastDay = days.at(-1)?.day ?? agg.days.at(-1).day;
+const months = [...new Set(days.map((d) => monthOf(d.day)))].filter((m) => monthEnd(m) < cutoff && monthEnd(m) <= lastDay);
+const rolled = new Set(months);
+const dayRowFrom = addDays(live ?? addDays(lastDay, 1), -DAY_ROWS_KEPT);
+const keepDayRow = (day) => !rolled.has(monthOf(day)) || day >= dayRowFrom;
+const markers = new Set(all("select json_extract(data, '$.month') m from _plugin_storage where plugin_id = ? and collection = 'totals' and json_extract(data, '$.kind') = 'rollup'", PLUGIN).map((r) => r.m));
+const clash = [...months, ...(live ? [monthOf(live)] : [])].filter((m) => markers.has(m));
+if (clash.length) throw new Error(`Rollup markers already exist for ${clash.join(", ")}: those months were rolled up from live data and cannot take an import. Aborting.`);
+const pageMonthly = new Map(); // `${month}|${key}` -> views
+for (const [k, v] of pageRows) { const i = k.indexOf("|"); const m = monthOf(k); if (rolled.has(m)) pageMonthly.set(`${m}|${k.slice(i + 1)}`, (pageMonthly.get(`${m}|${k.slice(i + 1)}`) ?? 0) + v); }
+const dimMonthly = new Map(); // `${month}|${kind}|${value}` -> { kind, value, count }
+for (const d of dimsAll) { const m = monthOf(d.day); if (!rolled.has(m)) continue; const k = `${m}|${d.kind}|${d.value}`; const cur = dimMonthly.get(k) ?? { month: m, kind: d.kind, value: d.value, count: 0 }; cur.count += d.count; dimMonthly.set(k, cur); }
+const pageDayRows = [...pageRows].filter(([k]) => keepDayRow(k.slice(0, 10)));
+const dims = dimsAll.filter((d) => keepDayRow(d.day));
+
 log("\nWould import:");
 log(`  days:  ${days.length} rows, ${site.views} views, ${site.uniques} visitors`);
-log(`  pages: ${pageRows.size} rows, ${sum(Object.values(entries), (v) => v)} views over ${Object.keys(entries).length} pages`);
-log(`  dims:  ${dims.length} rows`);
+log(`  pages: ${sum(Object.values(entries), (v) => v)} views over ${Object.keys(entries).length} pages`);
+log(`  rollup: ${months.length} whole months (${months[0]}..${months.at(-1)}): ${pageMonthly.size} page rows, ${dimMonthly.size} dim rows, ${months.length} markers`);
+log(`  per-day: ${pageDayRows.length} page rows, ${dims.length} dim rows (from ${dayRowFrom} and in months not rolled up yet)`);
 log(`  skipped (not before the first live day): ${agg.days.length - days.length} days`);
 if (unresolved.size) {
 	log(`  unresolved pages (no matching slug here): ${unresolved.size}, ${sum([...unresolved.values()], (v) => v)} views`);
@@ -127,11 +155,14 @@ const bumpEntry = db.prepare(`${UPSERT}json_set(data, '$.views', coalesce(json_e
 db.exec("BEGIN IMMEDIATE");
 try {
 	for (const d of days) put("days", `d:${d.day}`, { day: d.day, views: d.views, uniques: d.uniques });
-	for (const [k, views] of pageRows) { const i = k.indexOf("|"); put("pages", `p:${k}`, { day: k.slice(0, i), key: k.slice(i + 1), views }); }
+	for (const [k, views] of pageDayRows) { const i = k.indexOf("|"); put("pages", `p:${k}`, { day: k.slice(0, i), key: k.slice(i + 1), views }); }
 	for (const d of dims) put("dims", `m:${d.day}|${d.kind}|${d.value}`, { day: d.day, kind: d.kind, value: d.value, count: d.count });
+	for (const [k, views] of pageMonthly) { const i = k.indexOf("|"); put("pagesm", `pm:${k}`, { month: k.slice(0, i), key: k.slice(i + 1), views }); }
+	for (const [k, d] of dimMonthly) put("dimsm", `mm:${k}`, d);
+	for (const m of months) put("totals", `rollup:${m}`, { kind: "rollup", month: m });
 	bumpSite.run(PLUGIN, "site", JSON.stringify({ kind: "site", views: site.views, uniques: site.uniques }), now, now, randomUUID(), site.views, site.uniques);
 	for (const [key, views] of Object.entries(entries)) bumpEntry.run(PLUGIN, `e:${key}`, JSON.stringify({ kind: "page", key, views }), now, now, randomUUID(), views);
-	ins.run(PLUGIN, "totals", "backfill", JSON.stringify({ kind: "backfill", at: now, source: agg.generatedAt, backup, cutoff, site, entries }), now, now, randomUUID());
+	ins.run(PLUGIN, "totals", "backfill", JSON.stringify({ kind: "backfill", at: now, source: agg.generatedAt, backup, cutoff, months, site, entries }), now, now, randomUUID());
 	db.exec("COMMIT");
 } catch (e) { db.exec("ROLLBACK"); throw e; }
 
