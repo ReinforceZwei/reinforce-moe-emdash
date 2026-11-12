@@ -96,3 +96,27 @@ export const emptyBlock = (title: string, description: string): Block =>
 
 export const errorBanner = (message: string): Block =>
 	({ type: "banner", variant: "error", title: "Site stats", description: message }) as Block;
+
+/** Table of a counted dimension with each row's share of the total (visitor-days). */
+export function dimTable(
+	pageActionId: string,
+	firstLabel: string,
+	rows: Array<{ name: string; count: number }>,
+	total: number,
+): Block {
+	return {
+		type: "table",
+		block_id: `tbl-${pageActionId}`,
+		page_action_id: pageActionId,
+		columns: [
+			{ key: "name", label: firstLabel, format: "text" },
+			{ key: "count", label: "Visitors", format: "number" },
+			{ key: "share", label: "Share", format: "text" },
+		],
+		rows: rows.map((r) => ({
+			name: r.name,
+			count: r.count,
+			share: total ? `${((r.count / total) * 100).toFixed(1)}%` : "-",
+		})),
+	} as Block;
+}

@@ -60,3 +60,26 @@ test("widget surface, garbage input and unknown pages never throw", async () => 
 		assert.equal(res.blocks[0]!.type, "banner");
 	}
 });
+
+test("sources and technology pages sum dimensions with shares", async () => {
+	resetSettingsCache();
+	const env = fakeEnv();
+	const put = (day: string, kind: string, value: string, count: number) =>
+		env.storage.dims.rows.set(`m:${day}|${kind}|${value}`, { day, kind, value, count });
+	put("2026-11-12", "channel", "search", 3);
+	put("2026-11-11", "channel", "search", 1);
+	put("2026-11-12", "channel", "direct", 4);
+	put("2026-11-12", "word", "emdash plugin", 2);
+	put("2026-11-12", "browser", "Chrome", 5);
+	put("2026-11-12", "device", "mobile", 5);
+	const src = await handleAdmin(ctxOf(env, { type: "page_load", page: "/sources" }), NOW);
+	assert.equal(validateBlocks(src.blocks as any).valid, true);
+	const text = JSON.stringify(src.blocks);
+	assert.match(text, /"name":"Search engines","count":4,"share":"50.0%"/);
+	assert.match(text, /"name":"Direct","count":4,"share":"50.0%"/);
+	assert.match(text, /emdash plugin/);
+	assert.match(text, /No data/, "engine and ref are empty");
+	const tech = await handleAdmin(ctxOf(env, { type: "page_load", page: "/technology" }), NOW);
+	assert.equal(validateBlocks(tech.blocks as any).valid, true);
+	assert.match(JSON.stringify(tech.blocks), /"name":"Mobile","count":5,"share":"100.0%"/);
+});

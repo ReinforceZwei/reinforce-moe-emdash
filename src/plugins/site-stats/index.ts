@@ -69,7 +69,11 @@ export function createPlugin() {
 			},
 		},
 		admin: {
-			pages: [{ path: PAGES.overview, label: "Site stats", icon: "chart" }],
+			pages: [
+				{ path: PAGES.overview, label: "Site stats", icon: "chart" },
+				{ path: PAGES.sources, label: "Sources", icon: "chart" },
+				{ path: PAGES.technology, label: "Technology", icon: "chart" },
+			],
 			widgets: [{ id: "site-stats-summary", title: "Site stats", size: "half" }],
 			settingsSchema: {
 				timezone: {
