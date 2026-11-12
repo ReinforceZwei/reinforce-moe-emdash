@@ -142,7 +142,7 @@ export default defineConfig({
 				emdashSmtp(),
 				{
 					id: "comment-groups",
-					version: "0.1.0",
+					version: "0.2.0",
 					format: "native",
 					entrypoint: "/src/plugins/comment-groups/index.ts",
 					adminEntry: "/src/plugins/comment-groups/admin.tsx",
