@@ -1,0 +1,33 @@
+.comment-groups {
+	max-width: 76rem;
+	margin: 0 auto;
+	padding: 1.5rem;
+	color: inherit;
+}
+.comment-groups__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.comment-groups h1 { margin: 0; font-size: 1.7rem; font-weight: 700; }
+.comment-groups__header p { margin: .4rem 0 1.25rem; }
+.comment-groups__controls, .comment-groups__actions, .comment-groups__comment-header { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+.comment-groups__controls { margin: .5rem 0 1rem; }
+.comment-groups__controls label { font-weight: 600; }
+.comment-groups button, .comment-groups select { border: 1px solid currentColor; border-radius: .35rem; padding: .4rem .7rem; background: transparent; color: inherit; font: inherit; }
+.comment-groups button { cursor: pointer; }
+.comment-groups button:disabled, .comment-groups select:disabled { cursor: wait; opacity: .55; }
+.comment-groups button:focus-visible, .comment-groups select:focus-visible, .comment-groups summary:focus-visible, .comment-groups a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.comment-groups__summary, .comment-groups__meta { opacity: .75; font-size: .875rem; overflow-wrap: anywhere; }
+.comment-groups__notice, .comment-groups__error { border: 1px solid currentColor; border-radius: .35rem; padding: .7rem; margin: .75rem 0; }
+.comment-groups__error { color: #b42318; }
+.comment-groups__group { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: .5rem; margin: .7rem 0; }
+.comment-groups__group summary { cursor: pointer; padding: .9rem; overflow-wrap: anywhere; }
+.comment-groups__group summary > span { margin-inline-start: .8rem; }
+.comment-groups__group-content { padding: 0 .9rem .9rem; }
+.comment-groups__group-content > a { text-decoration: underline; }
+.comment-groups__list { list-style: none; padding: 0; margin: .7rem 0 0; }
+.comment-groups__comment { border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); padding: 1rem 0; overflow-wrap: anywhere; }
+.comment-groups__comment p { margin: .4rem 0; }
+.comment-groups__badge { border: 1px solid currentColor; border-radius: 999px; padding: .1rem .5rem; font-size: .75rem; text-transform: capitalize; }
+.comment-groups__comment time { font-size: .875rem; opacity: .75; }
+.comment-groups__body { white-space: pre-wrap; }
+.comment-groups__actions { margin-top: .75rem; }
+.comment-groups__actions button { font-size: .875rem; }
+.comment-groups__visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
