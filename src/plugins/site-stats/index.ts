@@ -10,6 +10,7 @@
 import { definePlugin } from "emdash";
 import { buildBeacon } from "./beacon.ts";
 import { handleAdmin, PAGES, type AdminCtx } from "./admin/handler.ts";
+import { panelBlocks } from "./admin/panel.ts";
 import { pageKeyForRender } from "./lib/pagekey.ts";
 import { SETTING_DEFAULTS } from "./lib/settings.ts";
 import { handleTrack } from "./track.ts";
@@ -67,6 +68,9 @@ export function createPlugin() {
 			admin: {
 				handler: async (ctx) => handleAdmin(ctx as unknown as AdminCtx),
 			},
+			"editor/views": {
+				handler: async (ctx) => panelBlocks(ctx as unknown as AdminCtx),
+			},
 		},
 		admin: {
 			pages: [
@@ -74,6 +78,7 @@ export function createPlugin() {
 				{ path: PAGES.sources, label: "Sources", icon: "chart" },
 				{ path: PAGES.technology, label: "Technology", icon: "chart" },
 			],
+			editorPanels: [{ id: "site-stats-views", title: "Views", route: "editor/views", collections: ["posts", "pages"] }],
 			widgets: [{ id: "site-stats-summary", title: "Site stats", size: "half" }],
 			settingsSchema: {
 				timezone: {

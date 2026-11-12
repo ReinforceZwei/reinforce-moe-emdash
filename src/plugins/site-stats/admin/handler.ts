@@ -1,6 +1,7 @@
 import type { Block, BlockResponse } from "@emdash-cms/blocks";
 import { z } from "zod";
 import { chartBlock, dimTable, emptyBlock, errorBanner, n, rangePicker, statsBlock, tableBlock, truncatedNote, type Summary } from "../blocks.ts";
+import { panelBlocks } from "./panel.ts";
 import { readSettings } from "../lib/settings.ts";
 import type { Env } from "../lib/types.ts";
 import {
@@ -132,6 +133,7 @@ export async function handleAdmin(ctx: AdminCtx, now = new Date()): Promise<Bloc
 		const input = parsed.data;
 
 		if (ctx.ui?.surface === "dashboard-widget") return { blocks: await widgetBlocks(ctx, now) };
+		if (ctx.ui?.surface === "content-editor-panel") return panelBlocks(ctx, now);
 
 		if (input.type === "block_action" && input.action_id === "range") {
 			await ctx.kv.set(RANGE_KEY, parseRange(input.value));
