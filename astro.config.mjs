@@ -243,6 +243,12 @@ export default defineConfig({
 					entrypoint: "/src/plugins/og-image/index.ts",
 				},
 				{
+					id: "site-stats",
+					version: "0.1.0",
+					format: "native",
+					entrypoint: "/src/plugins/site-stats/index.ts",
+				},
+				{
 					id: "file-download",
 					version: "1.0.0",
 					format: "native",
