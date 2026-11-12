@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { compactDue } from "./rollup.ts";
 import { pruneSeen, recordHit } from "./counters.ts";
 import { dayKey } from "./lib/day.ts";
 import { isBotUa } from "./lib/bots.ts";
@@ -70,5 +71,6 @@ export async function handleTrack(
 
 	await recordHit(env, { day, key: k, unique, referrer: r, ua, siteHosts: settings.siteHosts });
 	await pruneSeen(env, day).catch(() => 0);
+	await compactDue(env, day).catch((error) => console.error("[site-stats] rollup failed", error));
 	return { ok: true, unique };
 }

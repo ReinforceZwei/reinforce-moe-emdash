@@ -34,6 +34,8 @@ export function createPlugin() {
 			days: { indexes: ["day"] },
 			pages: { indexes: ["day", "key", ["day", "key"]] },
 			dims: { indexes: ["day", "kind", ["day", "kind"]] },
+			pagesm: { indexes: ["month", "key", ["month", "key"]] },
+			dimsm: { indexes: ["month", "kind", ["month", "kind"]] },
 			totals: { indexes: ["kind"] },
 			seen: { indexes: ["day"] },
 		},
