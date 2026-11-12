@@ -58,7 +58,7 @@ export function fakeColl(): Coll & { rows: Map<string, Row> } {
 export function fakeEnv(settings: Record<string, unknown> = {}): Env & { storage: Store & Record<string, ReturnType<typeof fakeColl>> } {
 	const kvData = new Map<string, unknown>();
 	return {
-		storage: { days: fakeColl(), pages: fakeColl(), dims: fakeColl(), totals: fakeColl(), seen: fakeColl() } as any,
+		storage: { days: fakeColl(), pages: fakeColl(), dims: fakeColl(), pagesm: fakeColl(), dimsm: fakeColl(), totals: fakeColl(), seen: fakeColl() } as any,
 		kv: {
 			async get<T>(k: string) {
 				return (kvData.get(k) as T) ?? null;

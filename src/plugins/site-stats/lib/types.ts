@@ -26,6 +26,9 @@ export interface Store {
 	days: Coll;
 	pages: Coll;
 	dims: Coll;
+	/** Monthly rollups of `pages` and `dims`, so long ranges read tens of rows instead of thousands. */
+	pagesm: Coll;
+	dimsm: Coll;
 	totals: Coll;
 	seen: Coll;
 }
