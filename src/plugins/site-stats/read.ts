@@ -1,24 +1,10 @@
 import { addDays, dayKey, dayRange } from "./lib/day.ts";
+import { planSegments, type Segment } from "./lib/month.ts";
+import { queryAll } from "./lib/query.ts";
+import { loadDoneMonths } from "./rollup.ts";
 import type { Coll, Env, Where } from "./lib/types.ts";
 
-/** Storage returns at most 100 rows a query and has no GROUP BY, so reads page and sum here. */
-const PAGE = 100;
-const MAX_PAGES = 40;
-
-export async function queryAll<T extends Record<string, any>>(
-	coll: Coll,
-	where: Where,
-): Promise<{ rows: T[]; truncated: boolean }> {
-	const rows: T[] = [];
-	let cursor: string | undefined;
-	for (let i = 0; i < MAX_PAGES; i++) {
-		const page = await coll.query({ where, limit: PAGE, cursor });
-		for (const item of page.items) rows.push(item.data as T);
-		if (!page.hasMore || !page.cursor) return { rows, truncated: false };
-		cursor = page.cursor;
-	}
-	return { rows, truncated: true };
-}
+export { queryAll };
 
 export type RangeId = "7d" | "30d" | "90d" | "365d";
 export const RANGES: Array<{ id: RangeId; label: string; days: number }> = [
@@ -71,15 +57,37 @@ export async function loadDays(env: Pick<Env, "storage">, from: string, to: stri
 export const sumViews = (p: DayPoint[]) => p.reduce((n, d) => n + d.views, 0);
 export const sumUniques = (p: DayPoint[]) => p.reduce((n, d) => n + d.uniques, 0);
 
+/**
+ * Rows for a day range from per-day rows, or from the monthly rollup for whole finished months.
+ * `dayColl`/`monthColl` hold the same fields under `day` / `month`.
+ */
+async function loadRolled<T extends Record<string, any>>(
+	env: Pick<Env, "storage">,
+	dayColl: Coll,
+	monthColl: Coll,
+	from: string,
+	to: string,
+	extra: Where = {},
+): Promise<{ rows: T[]; truncated: boolean }> {
+	const done = await loadDoneMonths(env);
+	const segs: Segment[] = planSegments(from, to, done);
+	const parts = await Promise.all(
+		segs.map((s) =>
+			s.type === "month"
+				? queryAll<T>(monthColl, { ...extra, month: { gte: s.from, lte: s.to } })
+				: queryAll<T>(dayColl, { ...extra, day: { gte: s.from, lte: s.to } }),
+		),
+	);
+	return { rows: parts.flatMap((p) => p.rows), truncated: parts.some((p) => p.truncated) };
+}
+
 export interface PageRow {
 	key: string;
 	views: number;
 }
 
 export async function loadTopPages(env: Pick<Env, "storage">, from: string, to: string, top: number) {
-	const { rows, truncated } = await queryAll<{ key: string; views?: number }>(env.storage.pages, {
-		day: { gte: from, lte: to },
-	});
+	const { rows, truncated } = await loadRolled<{ key: string; views?: number }>(env, env.storage.pages, env.storage.pagesm, from, to);
 	const sums = new Map<string, number>();
 	for (const r of rows) sums.set(r.key, (sums.get(r.key) ?? 0) + (r.views ?? 0));
 	const list: PageRow[] = [...sums].map(([key, views]) => ({ key, views })).sort((a, b) => b.views - a.views || a.key.localeCompare(b.key));
@@ -88,10 +96,7 @@ export async function loadTopPages(env: Pick<Env, "storage">, from: string, to: 
 
 /** Sums one dimension (`channel`, `engine`, `browser`, ...) over a day range. */
 export async function loadDim(env: Pick<Env, "storage">, kind: string, from: string, to: string, top: number) {
-	const { rows, truncated } = await queryAll<{ value: string; count?: number }>(env.storage.dims, {
-		kind,
-		day: { gte: from, lte: to },
-	});
+	const { rows, truncated } = await loadRolled<{ value: string; count?: number }>(env, env.storage.dims, env.storage.dimsm, from, to, { kind });
 	const sums = new Map<string, number>();
 	for (const r of rows) sums.set(r.value, (sums.get(r.value) ?? 0) + (r.count ?? 0));
 	const list = [...sums].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
