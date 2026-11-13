@@ -18,7 +18,7 @@ export function createPlugin() {
 		capabilities: ["content:read"],
 		admin: {
 			entry: "/src/plugins/comment-groups/admin.tsx",
-			pages: [{ path: "/comments", label: "Comments by post", icon: "message-circle" }],
+			pages: [{ path: "/comments", label: "Comments by post", icon: "chat-circle" }],
 		},
 		routes: {
 			entries: {
