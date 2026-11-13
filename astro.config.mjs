@@ -141,6 +141,14 @@ export default defineConfig({
 			plugins: [
 				emdashSmtp(),
 				{
+					id: "comment-groups",
+					version: "0.2.0",
+					format: "native",
+					entrypoint: "/src/plugins/comment-groups/index.ts",
+					adminEntry: "/src/plugins/comment-groups/admin.tsx",
+					adminPages: [{ path: "/comments", label: "Comments by post", icon: "message-circle" }],
+				},
+				{
 					id: "og-image",
 					version: "1.0.0",
 					format: "native",
