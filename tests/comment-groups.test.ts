@@ -14,7 +14,9 @@ import {
 	type Comment,
 	distinctEntries,
 	entryKey,
+	flattenThreads,
 	groupComments,
+	threadComments,
 } from "../src/plugins/comment-groups/shared.ts";
 
 const originalFetch = globalThis.fetch;
@@ -336,5 +338,103 @@ test("entry keys stay distinct when a collection or id contains a separator", ()
 			{ collection: "a/b", contentId: "c" },
 			{ collection: "a", contentId: "b/c" },
 		],
+	);
+});
+
+// ---------------------------------------------------------------------------
+// shared.ts — threading
+// ---------------------------------------------------------------------------
+
+test("threadComments nests replies under their parent and keeps chronology", () => {
+	const threads = threadComments([
+		comment("root", { createdAt: "2026-01-01T00:00:00.000Z" }),
+		comment("reply-1", { parentId: "root", createdAt: "2026-01-02T00:00:00.000Z" }),
+		comment("reply-2", { parentId: "root", createdAt: "2026-01-03T00:00:00.000Z" }),
+		comment("other", { createdAt: "2026-01-04T00:00:00.000Z" }),
+	]);
+
+	assert.deepEqual(
+		threads.map((node) => node.comment.id),
+		["root", "other"],
+	);
+	assert.deepEqual(
+		threads[0]!.replies.map((node) => node.comment.id),
+		["reply-1", "reply-2"],
+	);
+	assert.equal(threads[1]!.replies.length, 0);
+});
+
+test("interleaved replies still attach to the right parent", () => {
+	const threads = threadComments([
+		comment("a", { createdAt: "2026-01-01T00:00:00.000Z" }),
+		comment("b", { createdAt: "2026-01-02T00:00:00.000Z" }),
+		comment("a1", { parentId: "a", createdAt: "2026-01-03T00:00:00.000Z" }),
+		comment("b1", { parentId: "b", createdAt: "2026-01-04T00:00:00.000Z" }),
+	]);
+
+	assert.deepEqual(
+		threads.map((node) => [node.comment.id, node.replies.map((reply) => reply.comment.id)]),
+		[
+			["a", ["a1"]],
+			["b", ["b1"]],
+		],
+	);
+});
+
+test("a reply whose parent is filtered out stays top-level and keeps its parentId", () => {
+	// What the pending tab actually looks like: the parent is approved, so only the reply loads.
+	const threads = threadComments([comment("orphan", { parentId: "approved-parent" })]);
+
+	assert.equal(threads.length, 1);
+	assert.equal(threads[0]!.comment.id, "orphan");
+	assert.equal(threads[0]!.comment.parentId, "approved-parent");
+	assert.equal(threads[0]!.replies.length, 0);
+});
+
+test("a chain deeper than the UI nests recursively", () => {
+	const threads = threadComments([
+		comment("a", { createdAt: "2026-01-01T00:00:00.000Z" }),
+		comment("b", { parentId: "a", createdAt: "2026-01-02T00:00:00.000Z" }),
+		comment("c", { parentId: "b", createdAt: "2026-01-03T00:00:00.000Z" }),
+	]);
+
+	assert.equal(threads.length, 1);
+	assert.equal(threads[0]!.replies[0]!.comment.id, "b");
+	assert.equal(threads[0]!.replies[0]!.replies[0]!.comment.id, "c");
+});
+
+test("self-parents and cycles surface as top-level comments instead of disappearing", () => {
+	const self = threadComments([comment("loop", { parentId: "loop" })]);
+	assert.deepEqual(
+		self.map((node) => node.comment.id),
+		["loop"],
+	);
+
+	const cycle = threadComments([
+		comment("x", { parentId: "y", createdAt: "2026-01-01T00:00:00.000Z" }),
+		comment("y", { parentId: "x", createdAt: "2026-01-02T00:00:00.000Z" }),
+		comment("safe", { parentId: "x", createdAt: "2026-01-03T00:00:00.000Z" }),
+	]);
+	const rendered = flattenThreads(cycle).map((item) => item.id).sort();
+	assert.deepEqual(rendered, ["safe", "x", "y"]);
+});
+
+test("flattenThreads lists parents before children and every comment exactly once", () => {
+	const threads = threadComments([
+		comment("a", { createdAt: "2026-01-01T00:00:00.000Z" }),
+		comment("a1", { parentId: "a", createdAt: "2026-01-02T00:00:00.000Z" }),
+		comment("b", { createdAt: "2026-01-03T00:00:00.000Z" }),
+	]);
+
+	assert.deepEqual(
+		flattenThreads(threads).map((item) => item.id),
+		["a", "a1", "b"],
+	);
+	// Stable regardless of the order pages arrived in.
+	assert.deepEqual(
+		flattenThreads(threadComments([comment("b", { createdAt: "2026-01-03T00:00:00.000Z" }), comment("a", { createdAt: "2026-01-01T00:00:00.000Z" })])).map(
+			(item) => item.id,
+		),
+		["a", "b"],
 	);
 });

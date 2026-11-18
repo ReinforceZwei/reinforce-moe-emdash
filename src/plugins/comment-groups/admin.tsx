@@ -41,10 +41,12 @@ import {
 	type Comment,
 	type CommentGroup,
 	type CommentStatus,
+	type CommentThread,
 	distinctEntries,
 	entryKey,
 	groupComments,
 	type StatusFilter,
+	threadComments,
 } from "./shared.ts";
 import "./admin.css";
 
@@ -178,12 +180,21 @@ function CommentRow({
 	comment,
 	busy,
 	onModerate,
+	depth = 0,
+	replyCount = 0,
 }: {
 	comment: Comment;
 	busy: boolean;
 	onModerate: (comment: Comment, action: CommentStatus | "delete") => void;
+	/** 0 for a root comment, 1+ for a reply. */
+	depth?: number;
+	/** Replies shown directly under this comment in the current view. */
+	replyCount?: number;
 }) {
 	const badge = STATUS_BADGE[comment.status];
+	// A reply that is not nested anywhere: its parent is in another status tab, beyond the loaded
+	// pages, or deleted. The badge is the only hint that this row is not a thread starter.
+	const parentMissing = comment.parentId !== null && depth === 0;
 	const secondaryAction = (status: CommentStatus, label: string, icon: ReactNode) => (
 		<Button size="sm" variant="ghost" icon={icon} disabled={busy} onClick={() => onModerate(comment, status)}>
 			{label}
@@ -191,7 +202,7 @@ function CommentRow({
 	);
 
 	return (
-		<li className="cg-comment">
+		<li className={`cg-comment${depth > 0 ? " cg-comment--reply" : ""}`}>
 			<div className="cg-comment__head">
 				<span className="cg-avatar" aria-hidden="true">
 					{initialOf(comment)}
@@ -207,7 +218,19 @@ function CommentRow({
 					) : null}
 				</span>
 				<Badge variant={badge.variant}>{badge.label}</Badge>
-				{comment.parentId ? <Badge variant="outline">Reply</Badge> : null}
+				{parentMissing ? (
+					<span
+						className="cg-badge-hint"
+						title="The comment this replies to is not in this list: it may be in another status, beyond the loaded results, or deleted."
+					>
+						<Badge variant="outline">Reply</Badge>
+					</span>
+				) : null}
+				{replyCount > 0 ? (
+					<Badge variant="secondary">
+						{replyCount} {replyCount === 1 ? "reply" : "replies"}
+					</Badge>
+				) : null}
 				<span className="cg-comment__time">
 					<Text variant="secondary" size="xs" as="span">
 						<time dateTime={comment.createdAt} title={formatAbsolute(comment.createdAt)}>
@@ -259,6 +282,37 @@ function CommentRow({
 	);
 }
 
+function ThreadList({
+	threads,
+	busy,
+	onModerate,
+	depth = 0,
+}: {
+	threads: readonly CommentThread[];
+	busy: boolean;
+	onModerate: (comment: Comment, action: CommentStatus | "delete") => void;
+	depth?: number;
+}) {
+	return (
+		<ul className={depth === 0 ? "cg-comments" : "cg-replies"}>
+			{threads.map((node) => (
+				<li key={node.comment.id} className="cg-thread">
+					<CommentRow
+						comment={node.comment}
+						busy={busy}
+						onModerate={onModerate}
+						depth={depth}
+						replyCount={node.replies.length}
+					/>
+					{node.replies.length > 0 ? (
+						<ThreadList threads={node.replies} busy={busy} onModerate={onModerate} depth={depth + 1} />
+					) : null}
+				</li>
+			))}
+		</ul>
+	);
+}
+
 function GroupCard({
 	group,
 	filter,
@@ -276,6 +330,7 @@ function GroupCard({
 }) {
 	const pending = group.comments.filter((comment) => comment.status === "pending").length;
 	const total = group.comments.length;
+	const threads = useMemo(() => threadComments(group.comments), [group.comments]);
 	const url = group.entry?.url ?? null;
 	const subtitle = group.entry?.exists
 		? [group.collection, group.entry.slug ?? group.contentId].filter(Boolean).join(" · ")
@@ -303,11 +358,11 @@ function GroupCard({
 						{filter !== "pending" && pending > 0 ? <Badge variant="warning">{pending} pending</Badge> : null}
 					</Collapsible.Trigger>
 					<Collapsible.Panel>
-						<ul className="cg-comments">
-							{group.comments.map((comment) => (
-								<CommentRow key={comment.id} comment={comment} busy={busyId !== null} onModerate={onModerate} />
-							))}
-						</ul>
+						<ThreadList
+							threads={threads}
+							busy={busyId !== null}
+							onModerate={onModerate}
+						/>
 					</Collapsible.Panel>
 				</Collapsible.Root>
 				<div className="cg-group__aside">
