@@ -1,0 +1,185 @@
+---
+/**
+ * Custom comment section: server-rendered list, inline replies, live update
+ * from the public JSON API, optional Turnstile.
+ *
+ * Replaces `Comments` + `CommentForm` from `emdash/ui/comments`. The list markup
+ * comes from `lib/comments/render.ts`, which the browser reuses after a
+ * successful submit — so a comment rendered by the client is identical to one
+ * rendered by the server, and no page re-fetch is needed.
+ *
+ * Data path (all unchanged EmDash endpoints):
+ *   read   GET  /_emdash/api/comments/:collection/:contentId?threaded=true
+ *   submit POST /_emdash/api/comments/:collection/:contentId   (+ parentId)
+ *   likes  GET/POST /_emdash/api/comments/:collection/:contentId/reactions
+ */
+import { getCollectionInfo, getComments } from "emdash";
+import {
+  DEFAULT_LABELS,
+  commentListHtml,
+  headingFor,
+  type CommentLabels,
+  type CommentNode,
+} from "../../lib/comments/render";
+
+interface Props {
+  collection: string;
+  contentId: string;
+  /** Publish date; used to honour the collection's closing window. */
+  publishedAt?: string | Date | null;
+  /** Show a like button per comment (reads and writes EmDash reactions). */
+  reactions?: boolean;
+  /** Cloudflare Turnstile site key. The server verifies only when
+   *  EMDASH_TURNSTILE_SECRET_KEY is set, exactly as with the built-in form. */
+  turnstileSiteKey?: string;
+  labels?: Partial<CommentLabels>;
+  class?: string;
+}
+
+const {
+  collection,
+  contentId,
+  publishedAt = null,
+  reactions = true,
+  turnstileSiteKey,
+  labels: customLabels = {},
+  class: className,
+} = Astro.props;
+
+const labels: CommentLabels = { ...DEFAULT_LABELS, ...customLabels };
+// The site is written in Traditional Chinese; `Astro.currentLocale` is unset
+// unless i18n is configured, and an en-US date under Chinese labels looks wrong.
+const locale = Astro.currentLocale ?? "zh-TW";
+
+// Match EmDash's own closure check (published_at + N days) so the form and the
+// endpoint agree; the built-in components show the form regardless and then
+// fail the submit with COMMENTS_CLOSED.
+const info = await getCollectionInfo(collection);
+const enabled = info?.commentsEnabled ?? false;
+const closedAfterDays = info?.commentsClosedAfterDays ?? 0;
+const closed = (() => {
+  if (!enabled || closedAfterDays <= 0 || !publishedAt) return false;
+  const start = new Date(publishedAt);
+  if (Number.isNaN(start.getTime())) return false;
+  const closes = new Date(start);
+  closes.setDate(closes.getDate() + closedAfterDays);
+  return new Date() > closes;
+})();
+
+const { items, total } = enabled
+  ? await getComments({ collection, contentId, threaded: true, reactions })
+  : { items: [], total: 0 };
+
+// The same formatter runs in the browser; pin the zone so a client re-render
+// cannot shift every existing timestamp.
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const user = Astro.locals.user;
+
+const endpoint = `/_emdash/api/comments/${encodeURIComponent(collection)}/${encodeURIComponent(contentId)}`;
+const listHtml = commentListHtml(items as CommentNode[], {
+  labels,
+  reactions,
+  locale,
+  timeZone,
+  allowReply: !closed,
+});
+---
+
+{
+  enabled && (
+    <section
+      class:list={["ec-comments", className]}
+      data-ec-comments
+      data-collection={collection}
+      data-content-id={contentId}
+      data-endpoint={endpoint}
+      data-reactions={reactions ? "true" : "false"}
+      data-locale={locale}
+      data-time-zone={timeZone}
+      data-total={total}
+      data-allow-reply={closed ? "false" : "true"}
+      data-labels={JSON.stringify(labels)}
+    >
+      <h3 class="ec-heading" data-ec-heading>
+        {headingFor(labels, total)}
+      </h3>
+
+      <div class="ec-list-slot" data-ec-list set:html={listHtml} />
+
+      {closed ? (
+        <p class="ec-closed">{labels.closed}</p>
+      ) : (
+        <form
+          class="ec-form"
+          data-ec-form
+          data-user-name={user?.name ?? ""}
+          data-user-email={user?.email ?? ""}
+        >
+          <input type="hidden" name="parentId" value="" data-ec-parent-id />
+
+          <div class="ec-reply-note" data-ec-reply-note hidden>
+            <span data-ec-reply-target />
+            <button type="button" class="ec-cancel-reply" data-ec-cancel-reply>
+              {labels.cancel}
+            </button>
+          </div>
+
+          {user ? (
+            <div class="ec-form-as">
+              <span class="ec-form-as-name">{user.name}</span>
+              <span class="ec-form-as-email">{user.email}</span>
+            </div>
+          ) : (
+            <div class="ec-form-row">
+              <label class="ec-form-field">
+                <span>{labels.name}</span>
+                <input type="text" name="authorName" required maxlength="100" autocomplete="nickname" />
+              </label>
+              <label class="ec-form-field">
+                <span>{labels.email}</span>
+                <input type="email" name="authorEmail" required autocomplete="email" />
+              </label>
+            </div>
+          )}
+
+          {/* Honeypot: hidden from humans, filled by bots. EmDash accepts the
+              submission and drops it, so the bot sees a success. */}
+          <div class="ec-honeypot" aria-hidden="true">
+            <label>
+              Don't fill this out
+              <input type="text" name="website_url" tabindex="-1" autocomplete="off" />
+            </label>
+          </div>
+
+          <label class="ec-form-field">
+            <span>{labels.comment}</span>
+            <textarea name="body" required maxlength="5000" rows="4" />
+          </label>
+
+          {turnstileSiteKey && (
+            <div
+              class="cf-turnstile ec-turnstile"
+              data-sitekey={turnstileSiteKey}
+              data-theme="auto"
+            />
+          )}
+
+          <button type="submit" class="ec-submit" data-ec-submit>
+            {labels.submit}
+          </button>
+
+          <div class="ec-status" data-ec-status role="status" aria-live="polite" />
+        </form>
+      )}
+    </section>
+  )
+}
+
+{turnstileSiteKey && enabled && !closed && (
+  <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+)}
+
+<script>
+  import { initCommentSection } from "../../lib/comments/client";
+  initCommentSection();
+</script>

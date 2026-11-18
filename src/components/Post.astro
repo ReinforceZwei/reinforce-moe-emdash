@@ -1,8 +1,7 @@
 ---
 import Prose from "./prose/Prose.astro";
-import { Comments, CommentForm } from "emdash/ui/comments";
+import CommentSection from "./comments/CommentSection.astro";
 import Container from "./Container.astro";
-import CommentLiveUpdate from "./CommentLiveUpdate.astro";
 import { EMPTY_TERMS, type NormalizedTerms } from "../lib/content/terms";
 import type { PostEntry } from "../lib/content/types";
 import { formatPostDate, postDate } from "../lib/format";
@@ -18,14 +17,16 @@ const { post, terms = EMPTY_TERMS }: Props = Astro.props;
 const publishedDate = formatPostDate(postDate(post));
 const { category, tags } = terms;
 
-// EmDash's built-in comments (emdash/ui/comments) ship English defaults.
+// Labels for the site's comment component (lib/comments). Plain strings only:
+// the browser reads them back from a data attribute, so functions cannot be used.
 const commentLabels = {
-  heading: (count: number) => (count === 0 ? "暫無留言" : `${count} 則留言`),
+  headingZero: "暫無留言",
+  headingMany: "{count} 則留言",
   member: "站內會員",
   like: "喜歡",
-};
-
-const commentFormLabels = {
+  reply: "回覆",
+  replyTo: "回覆 {name}",
+  cancel: "取消",
   name: "名稱",
   email: "電子郵件",
   comment: "留言內容",
@@ -35,6 +36,15 @@ const commentFormLabels = {
   pending: "留言已送出，待審核後顯示",
   error: "送出失敗，請稍後再試",
   networkError: "網絡錯誤，請再試一次",
+  closed: "此文章的留言已關閉。",
+  errors: {
+    COMMENTS_CLOSED: "此文章的留言已關閉。",
+    COMMENTS_DISABLED: "此文章未開放留言。",
+    TURNSTILE_FAILED: "人機驗證失敗，請重新整理頁面後再試。",
+    RATE_LIMITED: "留言太頻繁，請稍後再試。",
+    COMMENT_REJECTED: "留言未通過審核。",
+    VALIDATION_ERROR: "留言內容有誤，請檢查後再試。",
+  } as Record<string, string>,
 };
 
 // Optional Cloudflare Turnstile. Both values are optional: with no site key the
@@ -76,20 +86,14 @@ const turnstileSiteKey = process.env.PUBLIC_TURNSTILE_SITE_KEY;
   </article>
 
   <div class="post-comments">
-    <Comments
+    <CommentSection
       collection="posts"
       contentId={post.data.id}
-      threaded
+      publishedAt={post.data.publishedAt ?? post.data.createdAt}
       reactions
+      turnstileSiteKey={turnstileSiteKey}
       labels={commentLabels}
     />
-    <CommentForm
-      collection="posts"
-      contentId={post.data.id}
-      labels={commentFormLabels}
-      turnstileSiteKey={turnstileSiteKey}
-    />
-    <CommentLiveUpdate />
   </div>
 </Container>
 

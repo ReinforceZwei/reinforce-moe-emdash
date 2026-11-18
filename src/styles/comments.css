@@ -1,13 +1,11 @@
 /**
- * EmDash built-in comments, re-skinned to the site palette.
+ * Comment section styling — the site's own component, not EmDash's.
  *
- * The comment components ship neutral greys and expose their colours through
- * custom properties (--ec-form-*, --ec-comment-border). Setting those on the
- * wrapper themes the whole block without overriding individual rules.
- *
- * Specificity note: EmDash's own styles are Astro-scoped
- * (`.ec-comments[data-astro-cid-…]`), so overrides that target the same element
- * need more than one class. `section.ec-comments` inside `.post-comments` does.
+ * The list is rendered by `lib/comments/render.ts` on the server and, after a
+ * successful submit, by the same function in the browser. Because the template
+ * is ours, these rules live in a plain CSS file: there are no Astro scope
+ * attributes, so a comment inserted by the client is styled exactly like one
+ * that arrived with the page.
  */
 
 .post-comments {
@@ -15,36 +13,241 @@
   margin-inline: auto;
   margin-top: var(--space-8);
   padding-top: var(--space-6);
-
-  --ec-form-gap: var(--space-3);
-  --ec-form-border: var(--color-surface);
-  --ec-form-bg: var(--color-surface);
-  --ec-form-color: var(--color-input-text);
-  --ec-form-user-bg: var(--color-surface);
-  --ec-form-user-border: var(--color-surface);
-  --ec-form-submit-bg: var(--color-surface-strong);
-  --ec-form-submit-color: var(--color-on-strong);
-  --ec-form-success-color: var(--color-success);
-  --ec-form-error-color: var(--color-danger);
 }
 
-.post-comments section.ec-comments {
-  --ec-comment-border: var(--border-width) solid var(--color-surface);
-}
+/* ---------- Heading and list ---------- */
 
-.post-comments .ec-comments-heading {
+.ec-heading {
   margin-bottom: var(--space-5);
 }
 
-.post-comments .ec-comment-date {
+.ec-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ec-list > .ec-item + .ec-item {
+  margin-top: var(--space-5);
+}
+
+.ec-list--replies {
+  margin-top: var(--space-4);
+  padding-inline-start: var(--space-5);
+  border-inline-start: var(--border-width) solid var(--color-surface);
+}
+
+.ec-list--replies > .ec-item + .ec-item {
+  margin-top: var(--space-4);
+}
+
+.ec-item-body {
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-surface);
+}
+
+.ec-item--reply .ec-item-body {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ec-item-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.ec-author {
+  font-weight: 600;
+}
+
+.ec-badge {
+  margin-inline-start: 0.15em;
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+.ec-time {
+  font-size: 0.875em;
   opacity: 0.55;
 }
 
-/*
- * A comment spliced in by CommentLiveUpdate after a successful submit: a short
- * highlight so the reader notices it appear, then it fades back to normal.
- */
-.post-comments .ec-comment-item--new .ec-comment {
+.ec-text {
+  margin-top: var(--space-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------- Actions ---------- */
+
+.ec-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: 0.875em;
+}
+
+.ec-like,
+.ec-reply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.6rem;
+  font: inherit;
+  font-size: 0.875em;
+  color: inherit;
+  background: none;
+  border: var(--border-width) solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.ec-like:hover,
+.ec-reply-btn:hover {
+  border-color: var(--color-surface-strong);
+}
+
+.ec-like[aria-pressed="true"] {
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+.ec-like[aria-pressed="true"] .ec-like-icon {
+  color: var(--color-surface-strong);
+}
+
+.ec-like[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ec-like-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Form ---------- */
+
+.ec-form {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ec-form-row {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .ec-form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ec-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ec-form-as {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  font-size: 0.875em;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.ec-form-as-name {
+  font-weight: 600;
+}
+
+.ec-form-as-email {
+  opacity: 0.7;
+}
+
+.ec-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ec-turnstile {
+  min-height: 0;
+}
+
+.ec-submit {
+  margin-top: var(--space-1);
+  align-self: flex-start;
+}
+
+/* ---------- Reply mode ---------- */
+
+.ec-reply-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875em;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.ec-reply-note[hidden] {
+  display: none;
+}
+
+.ec-cancel-reply {
+  padding: 0;
+  font: inherit;
+  font-size: 0.875em;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ec-item--target .ec-item-body {
+  outline: var(--border-width) dashed var(--color-surface-strong);
+  outline-offset: var(--space-2);
+}
+
+/* ---------- Status ---------- */
+
+.ec-status {
+  font-size: 0.875em;
+  min-height: 1.2em;
+}
+
+.ec-status--ok {
+  color: var(--color-success);
+}
+
+.ec-status--error {
+  color: var(--color-danger);
+}
+
+.ec-closed {
+  margin-top: var(--space-6);
+  padding: var(--space-3);
+  font-size: 0.9em;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Arrival highlight ---------- */
+
+.ec-item--new .ec-item-body {
   animation: ec-comment-arrives 1.8s ease-out;
 }
 
