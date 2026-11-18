@@ -6,6 +6,10 @@ inbox stays available; this view is for reading a thread in context and moderati
 
 - Status tabs with live counts (Pending / Approved / Spam / Trash / All), server-side search over
   author name, email, and body, and per-entry cards you expand to read a thread.
+- Replies render nested under the comment they answer, indented behind a hairline rail, with a
+  "N replies" count on the parent. A reply whose parent is not in the current list (another status
+  tab, a page beyond the load, or a deleted comment) stays top-level and carries a `Reply` badge —
+  so the flat list only appears when the data really is flat, not for every reply.
 - Moderation goes through the single-comment status route, so EmDash's moderation service and its
   `comment:beforeCreate` / `comment:moderate` / `comment:afterModerate` hooks run. Delete is a
   separate, confirmed action that also removes replies and needs `comments:delete`.
@@ -40,6 +44,8 @@ the client cannot enumerate.
 - Deleted or unreadable entries keep their group with a `collection · entry missing` label and no
   link, so their comments stay moderateable.
 - No per-entry pagination or bulk actions yet. Strings are English-only (no Lingui catalog).
+- Threading is presentation only: the status tabs still load comments by status, so a reply is
+  shown under its parent only when both are in the loaded set. The badge is the fallback.
 
 ## Notes for maintainers
 

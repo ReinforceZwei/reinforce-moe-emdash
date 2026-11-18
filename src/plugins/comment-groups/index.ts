@@ -13,7 +13,7 @@ import { entriesInput, resolveEntries } from "./entries-route.ts";
 export function createPlugin() {
 	return definePlugin({
 		id: "comment-groups",
-		version: "0.2.0",
+		version: "0.3.0",
 		// Resolve entry titles and public URLs for the admin page's group headers.
 		capabilities: ["content:read"],
 		admin: {

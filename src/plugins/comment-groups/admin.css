@@ -120,14 +120,44 @@
 	border-top: 1px solid var(--color-kumo-hairline, var(--color-kumo-line));
 }
 
+.cg-thread {
+	list-style: none;
+}
+
+/* Separators sit between threads, not between a comment and its replies. */
+.cg-comments > .cg-thread + .cg-thread {
+	border-top: 1px solid var(--color-kumo-hairline, var(--color-kumo-line));
+}
+
+/*
+ * Reply block: indented to the avatar column with a hairline rail, so a thread reads as one unit
+ * while every reply keeps its own moderation buttons.
+ */
+.cg-replies {
+	list-style: none;
+	margin: 0;
+	padding: 0 1rem 0 2.25rem;
+	border-inline-start: 2px solid var(--color-kumo-hairline, var(--color-kumo-line));
+	margin-inline-start: 0.875rem;
+	margin-bottom: 0.25rem;
+}
+
+.cg-replies > .cg-thread + .cg-thread {
+	border-top: 1px solid var(--color-kumo-hairline, var(--color-kumo-line));
+}
+
+.cg-replies .cg-comment {
+	padding: 0.75rem 0 0.75rem 0.75rem;
+}
+
+.cg-badge-hint {
+	display: inline-flex;
+}
+
 .cg-comment {
 	display: grid;
 	gap: 0.5rem;
 	padding: 0.875rem 1rem 1rem;
-}
-
-.cg-comment + .cg-comment {
-	border-top: 1px solid var(--color-kumo-hairline, var(--color-kumo-line));
 }
 
 .cg-comment__head {
@@ -222,5 +252,11 @@
 
 	.cg-search {
 		width: 100%;
+	}
+
+	/* Keep the nesting visible without eating the comment column. */
+	.cg-replies {
+		padding-inline: 0.75rem;
+		margin-inline-start: 0.25rem;
 	}
 }
