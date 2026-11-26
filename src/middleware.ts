@@ -11,6 +11,13 @@
  *   - 404 for a slug that does not exist yet, which a later publish then has to invalidate.
  *   - 500 from a transient failure, pinned for the TTL.
  *
+ * Since EmDash 1.6.0 a content-miss 404 on a route-rule path is cached for up to 60 s by
+ * EmDash's own redirect middleware, which is registered outside this file and so re-applies
+ * the rule after the checks below run. That case is covered in the render instead:
+ * `src/pages/404.astro` passes `cacheHints={false}` to `Base.astro`, so the response carries
+ * no cache options and EmDash has nothing to store. The 404 check here stays as defence in
+ * depth for redirects and rewrites that do not go through that layout.
+ *
  * The second check respects the response's own instructions. EmDash's image endpoint serves
  * media that `Replace original` may overwrite with `Cache-Control: public, max-age=0,
  * must-revalidate`, and that header means the bytes must not be reused without checking the

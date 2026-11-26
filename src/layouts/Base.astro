@@ -26,15 +26,25 @@ import { SITE_LOCALE, type SeoContext } from "../lib/seo";
 
 interface Props {
 	seo: SeoContext;
+	/**
+	 * Set false on pages that opted out of the route cache (the 404).
+	 *
+	 * EmDash 1.6.0 caches content-miss 404s for up to 60 s from its own redirect
+	 * middleware, which runs after `src/middleware.ts` and re-applies the route
+	 * rule. Leaving the settings/menu hints off the render is what keeps the
+	 * miss uncached: EmDash's `routeCacheStores()` check then finds no cache
+	 * options and skips the store.
+	 */
+	cacheHints?: boolean;
 }
 
-const { seo } = Astro.props;
+const { seo, cacheHints = true } = Astro.props;
 
 const [settingsResult, menuResult] = await Promise.all([
 	getSiteSettingsWithCacheHint(),
 	getMenuWithCacheHint("primary"),
 ]);
-if (Astro.cache?.enabled) {
+if (cacheHints && Astro.cache?.enabled) {
 	Astro.cache.set(settingsResult.cacheHint);
 	Astro.cache.set(menuResult.cacheHint);
 }
