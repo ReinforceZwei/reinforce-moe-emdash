@@ -167,6 +167,14 @@ export default defineConfig({
 					entrypoint: "/src/plugins/file-download/index.ts",
 					componentsEntry: "/src/plugins/file-download/astro.ts",
 				},
+				{
+					// Editor sidebar panel; `adminEntry` is what puts it in the admin app.
+					id: "slug-tools",
+					version: "0.1.0",
+					format: "native",
+					entrypoint: "/src/plugins/slug-tools/index.ts",
+					adminEntry: "/src/plugins/slug-tools/admin.tsx",
+				},
 			],
 		}),
 	],
